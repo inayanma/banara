@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>究極のバナナ熟度・糖度チェッカー</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #0f111a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+      min-height: 100vh;
+    }
+    h1 { font-size: 1.3rem; margin: 10px 0; color: #ffe600; }
+    .camera-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      height: 320px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      background: #000;
+    }
+    video, canvas#snapshot {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .guide-frame {
+      position: absolute;
+      top: 15%;
+      left: 15%;
+      width: 70%;
+      height: 70%;
+      border: 2px dashed rgba(255, 230, 0, 0.7);
+      border-radius: 16px;
+      pointer-events: none;
+      box-shadow: inset 0 0 15px rgba(255, 230, 0, 0.2);
+    }
+    .card {
+      width: 100%;
+      max-width: 320px;
+      background: #1a1d29;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .brix-container {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .brix-val {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #ffe600;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      background: #333;
+      margin-bottom: 12px;
+    }
+    .advice {
+      font-size: 0.85rem;
+      color: #ccc;
+      line-height: 1.5;
+      background: #25293a;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .btn-group {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+    }
+    button {
+      flex: 1;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-primary { background: #ffe600; color: #000; }
+    .btn-secondary { background: #33384c; color: #fff; display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>🍌 バナナ糖度・熟度スキャナー</h1>
+
+  <div class="camera-wrapper">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="snapshot" style="display: none;"></canvas>
+    <div id="guide" class="guide-frame"></div>
+  </div>
+
+  <!-- 計算用非表示キャンバス -->
+  <canvas id="calc-canvas" width="100" height="100" style="display:none;"></canvas>
+
+  <div class="card">
+    <div class="brix-container">
+      <span>推定糖度</span>
+      <span class="brix-val" id="brix">-- <small style="font-size: 1rem;">度 (Brix)</small></span>
+    </div>
+    <div id="status-badge" class="status-badge">枠内に収めて撮影</div>
+    <div id="advice" class="advice">バナナを中央の黄色い枠に合わせて「スキャン」を押してください。</div>
+  </div>
+
+  <div class="btn-group">
+    <button id="main-btn" class="btn-primary" onclick="handleMainAction()">カメラを起動</button>
+    <button id="retake-btn" class="btn-secondary" onclick="retake()">再スキャン</button>
+  </div>
+
+  <script>
+    let stream = null;
+    let isScanning = false;
+    const video = document.getElementById('video');
+    const snapCanvas = document.getElementById('snapshot');
+    const calcCanvas = document.getElementById('calc-canvas');
+    const calcCtx = calcCanvas.getContext('2d', { willReadFrequently: true });
+    const guide = document.getElementById('guide');
+    const brixEl = document.getElementById('brix');
+    const badgeEl = document.getElementById('status-badge');
+    const adviceEl = document.getElementById('advice');
+    const mainBtn = document.getElementById('main-btn');
+    const retakeBtn = document.getElementById('retake-btn');
+
+    async function handleMainAction() {
+      if (!stream) {
+        // カメラ起動
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+          });
+          video.srcObject = stream;
+          mainBtn.innerText = '📸 スキャン判定';
+        } catch (e) {
+          alert('カメラの起動に失敗しました: ' + e.message);
+        }
+      } else {
+        // 撮影＆確定解析
+        analyzeSnapshot();
+      }
+    }
+
+    function rgbToHsv(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, v = max;
+      const d = max - min;
+      s = max === 0 ? 0 : d / max;
+      if (max === min) {
+        h = 0;
+      } else {
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [h * 360, s * 100, v * 100];
+    }
+
+    function analyzeSnapshot() {
+      // スナップショット描画
+      snapCanvas.width = video.videoWidth;
+      snapCanvas.height = video.videoHeight;
+      const sCtx = snapCanvas.getContext('2d');
+      sCtx.drawImage(video, 0, 0);
+
+      video.style.display = 'none';
+      snapCanvas.style.display = 'block';
+      guide.style.display = 'none';
+      mainBtn.style.display = 'none';
+      retakeBtn.style.display = 'block';
+
+      // 中央部を解析
+      const sx = video.videoWidth * 0.15;
+      const sy = video.videoHeight * 0.15;
+      const sw = video.videoWidth * 0.7;
+      const sh = video.videoHeight * 0.7;
+
+      calcCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 100, 100);
+      const imgData = calcCtx.getImageData(0, 0, 100, 100).data;
+
+      let gCount = 0, yCount = 0, bCount = 0, total = 0;
+
+      for (let i = 0; i < imgData.length; i += 4) {
+        const [h, s, v] = rgbToHsv(imgData[i], imgData[i+1], imgData[i+2]);
+        if (s > 18 && v > 15) {
+          if (h >= 65 && h <= 150) { gCount++; total++; }
+          else if (h >= 35 && h < 65 && v > 40) { yCount++; total++; }
+          else if ((h >= 10 && h < 35 && v < 60) || (h < 50 && v < 30)) { bCount++; total++; }
+        }
+      }
+
+      if (total < 100) {
+        badgeEl.innerText = '解析エラー';
+        badgeEl.style.background = '#e53935';
+        adviceEl.innerText = 'バナナがうまく検出できませんでした。枠の中に大きく収めてもう一度撮ってください。';
+        return;
+      }
+
+      const g = gCount / total;
+      const y = yCount / total;
+      const b = bCount / total;
+
+      // 糖度・熟度判定ロジック
+      if (g > 0.3) {
+        const brix = (12.0 + (1 - g) * 3).toFixed(1);
+        brixEl.innerHTML = `${brix} <small style="font-size:1rem;">度</small>`;
+        badgeEl.innerText = '🟢 未熟（グリーンバナナ）';
+        badgeEl.style.background = '#2e7d32';
+        adviceEl.innerHTML = '<b>特徴：</b>難消化性デンプン（レジスタントスターチ）が豊富！<br><b>おすすめ：</b>整腸作用・便秘解消に最適。甘さは控えめなのでスムージー等にも。';
+      } else if (b > 0.2) {
+        const brix = (19.0 + Math.min(b, 0.4) * 5).toFixed(1);
+        brixEl.innerHTML = `${brix} <small style="font-size:1rem;">度</small>`;
+        badgeEl.innerText = '🟤 完熟（シュガースポット）';
+        badgeEl.style.background = '#e65100';
+        adviceEl.innerHTML = '<b>特徴：</b>免疫活性作用・抗酸化作用がピーク！<br><b>おすすめ：</b>抜群の甘さ。消化吸収が非常に速いので、運動前後のエネルギー補給やケーキ作りに。';
+      } else {
+        const brix = (16.0 + y * 2).toFixed(1);
+        brixEl.innerHTML = `${brix} <small style="font-size:1rem;">度</small>`;
+        badgeEl.innerText = '🟡 ちょうど食べ頃！';
+        badgeEl.style.background = '#fbc02d';
+        badgeEl.style.color = '#000';
+        adviceEl.innerHTML = '<b>特徴：</b>甘みと酸味・香りのバランスが完璧。<br><b>おすすめ：</b>そのまま食べるのにベストなタイミング。ビタミンB群の補給に。';
+      }
+    }
+
+    function retake() {
+      video.style.display = 'block';
+      snapCanvas.style.display = 'none';
+      guide.style.display = 'block';
+      mainBtn.style.display = 'block';
+      retakeBtn.style.display = 'none';
+      badgeEl.innerText = '枠内に収めて撮影';
+      badgeEl.style.background = '#333';
+      badgeEl.style.color = '#fff';
+      brixEl.innerHTML = '-- <small style="font-size:1rem;">度 (Brix)</small>';
+      adviceEl.innerText = 'バナナを中央の黄色い枠に合わせて「スキャン判定」を押してください。';
+    }
+  </script>
+</body>
+</html>
