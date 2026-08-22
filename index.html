@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍌✨ きゃわわ♡激辛バナナ鑑定所 ✨🍌</title>
-  <!-- TensorFlow.js & MobileNet CDN -->
+  <title>🍌✨ きゃわわ♡公式バナナ鑑定所 ✨🍌</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -21,21 +21,22 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
-    
+
     .header-area {
       text-align: center;
       margin: 4px 0 8px;
+      width: 100%;
+      max-width: 320px;
     }
     h1 {
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       margin: 0;
       color: #ff4081;
       text-shadow: 2px 2px 0 #fff;
     }
     .banana-face {
-      font-size: 2.2rem;
+      font-size: 2rem;
       display: inline-block;
-      margin-top: 2px;
       animation: bounce 1.5s infinite alternate ease-in-out;
     }
     @keyframes bounce {
@@ -43,16 +44,79 @@
       100% { transform: translateY(-6px) rotate(8deg) scale(1.1); }
     }
 
+    /* ばーーーーんと出てしゅーーーっと消える巨大チャートオーバーレイ */
+    .giant-chart-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 240, 245, 0.95);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.5);
+    }
+    .giant-chart-overlay.show-bam {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+    .giant-chart-overlay.fade-shuuu {
+      opacity: 0;
+      transform: scale(1.15) translateY(-30px);
+      pointer-events: none;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .stage-card {
+      background: #fff;
+      border: 2px solid #ffccd7;
+      border-radius: 12px;
+      padding: 6px 2px;
+      text-align: center;
+      font-size: 0.68rem;
+      font-weight: 900;
+      color: #7a5860;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+    }
+    .stage-card .s-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+    
+    /* しれっと光るターゲット */
+    .stage-card.target-glow {
+      border: 3px solid #ff1493 !important;
+      background: #ffe3ee !important;
+      color: #d81b60 !important;
+      transform: scale(1.15);
+      box-shadow: 0 0 16px rgba(255, 20, 147, 0.7);
+      animation: pulse-glow 0.8s infinite alternate;
+      z-index: 2;
+    }
+    @keyframes pulse-glow {
+      0% { transform: scale(1.1); box-shadow: 0 0 8px #ff1493; }
+      100% { transform: scale(1.22); box-shadow: 0 0 22px #ff1493; }
+    }
+
     .camera-wrapper {
       position: relative;
       width: 100%;
       max-width: 320px;
-      height: 290px;
-      border-radius: 28px;
+      height: 270px;
+      border-radius: 24px;
       overflow: hidden;
       background: #222;
-      border: 5px solid #fff;
-      box-shadow: 0 8px 24px rgba(255, 105, 180, 0.25);
+      border: 4px solid #fff;
+      box-shadow: 0 6px 20px rgba(255, 105, 180, 0.25);
     }
     video, canvas#snapshot {
       width: 100%;
@@ -66,30 +130,8 @@
       width: 70%;
       height: 70%;
       border: 3px dashed #ff8dae;
-      border-radius: 20px;
+      border-radius: 18px;
       pointer-events: none;
-      box-shadow: inset 0 0 15px rgba(255, 141, 174, 0.4);
-    }
-
-    /* 画面中を跳ね回るパック */
-    .bouncing-pack {
-      position: fixed;
-      pointer-events: none;
-      z-index: 9999;
-      display: none;
-      white-space: nowrap;
-      text-align: center;
-    }
-    .bouncing-banana {
-      font-size: 3.8rem;
-      display: block;
-      filter: drop-shadow(0 8px 15px rgba(255, 105, 180, 0.6));
-    }
-    .bouncing-score-text {
-      font-size: 3.4rem;
-      font-weight: 900;
-      color: #ff1493;
-      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 0 6px 20px rgba(255, 20, 147, 0.5);
     }
 
     .card {
@@ -97,68 +139,73 @@
       width: 100%;
       max-width: 320px;
       background: #ffffff;
-      border-radius: 24px;
-      padding: 14px 16px;
+      border-radius: 20px;
+      padding: 14px;
       margin-top: 10px;
-      box-shadow: 0 6px 20px rgba(255, 182, 193, 0.3);
-      border: 3px solid #fff5f7;
+      box-shadow: 0 6px 18px rgba(255, 182, 193, 0.3);
+      border: 2px solid #fff5f7;
     }
     .score-row {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
-      min-height: 50px;
+      min-height: 46px;
     }
-    .score-label {
-      font-size: 0.9rem;
-      font-weight: bold;
-      color: #a37c86;
-    }
-    
     .settled-score {
-      font-size: 2.8rem;
+      font-size: 2.6rem;
       font-weight: 900;
       color: #ff2a70;
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      text-shadow: 2px 2px 0 #ffe0e9;
     }
 
     .badge {
       display: inline-block;
-      padding: 5px 14px;
+      padding: 5px 12px;
       border-radius: 20px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 900;
-      margin: 6px 0;
+      margin: 4px 0;
       background: #ffe3ee;
       color: #d81b60;
-      border: 1px solid #ffccd7;
     }
     .desc {
-      font-size: 0.86rem;
+      font-size: 0.82rem;
       color: #5c3d46;
-      line-height: 1.5;
+      line-height: 1.45;
       background: #fff8fa;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border-left: 5px solid #ff8dae;
-      font-weight: 700;
-    }
-    .recipe-box {
-      font-size: 0.8rem;
-      background: #fff0d4;
-      color: #8c5b00;
-      padding: 8px 12px;
+      padding: 8px 10px;
       border-radius: 12px;
-      margin-top: 8px;
+      border-left: 4px solid #ff8dae;
       font-weight: 700;
-      display: none;
-      border: 1px dashed #ffa940;
     }
-    .ai-tag {
-      font-size: 0.72rem;
-      color: #b08d96;
-      margin-top: 4px;
+
+    /* しれっと出てくるインラインチャート */
+    .inline-chart-area {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 2px dashed #ffccd7;
+      display: none;
+    }
+    .inline-chart-title {
+      font-size: 0.76rem;
+      font-weight: 900;
+      color: #ff4081;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .bouncing-pack {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      text-align: center;
+    }
+    .bouncing-banana { font-size: 3.5rem; display: block; }
+    .bouncing-score-text {
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: #ff1493;
+      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff;
     }
 
     .btn-group {
@@ -170,28 +217,38 @@
     }
     .action-btn {
       flex: 1;
-      padding: 13px;
-      font-size: 1.05rem;
+      padding: 12px;
+      font-size: 1rem;
       font-weight: 900;
       border: none;
-      border-radius: 20px;
+      border-radius: 16px;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
-      transition: transform 0.1s;
+      box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
     }
-    .action-btn:active { transform: scale(0.96); }
     .btn-scan {
       background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
       color: #fff;
     }
-    .btn-retake {
-      background: #f0e6ea;
-      color: #6d555c;
-      display: none;
-    }
+    .btn-retake { background: #f0e6ea; color: #6d555c; display: none; }
   </style>
 </head>
 <body>
+
+  <!-- ばーーーーんと出てしゅーーーっと消える全画面チャート -->
+  <div id="giant-chart" class="giant-chart-overlay">
+    <div style="font-size:1.8rem; font-weight:900; color:#ff4081; margin-bottom:8px;">🍌 公式熟度基準 🍌</div>
+    <div style="font-size:0.85rem; font-weight:700; color:#7a5860; margin-bottom:14px;">目指せStage 7（シュガースポット）！</div>
+    <div class="chart-grid">
+      <div class="stage-card"><span class="s-icon">🟢</span>St.1<br>オール緑</div>
+      <div class="stage-card"><span class="s-icon">🍏</span>St.2<br>青バナナ</div>
+      <div class="stage-card"><span class="s-icon">🥑</span>St.3<br>微熟</div>
+      <div class="stage-card"><span class="s-icon">🍈</span>St.4<br>先緑</div>
+      <div class="stage-card"><span class="s-icon">🍌</span>St.5<br>グリーン</div>
+      <div class="stage-card"><span class="s-icon">💛</span>St.6<br>フルイエロー</div>
+      <div class="stage-card" style="border-color:#ff9800;"><span class="s-icon">🍯</span>St.7<br>完熟極甘</div>
+      <div class="stage-card"><span class="s-icon">🟤</span>St.8<br>過熟</div>
+    </div>
+  </div>
 
   <div class="header-area">
     <h1>🍌 きゃわわバナナ鑑定所 🍌</h1>
@@ -204,9 +261,8 @@
     <div id="guide" class="guide-frame"></div>
   </div>
 
-  <!-- 飛び回るバナナ＆点数パック -->
   <div id="flying-pack" class="bouncing-pack">
-    <span id="flying-emoji" class="bouncing-banana">🍌</span>
+    <span class="bouncing-banana">🍌</span>
     <span id="flying-score" class="bouncing-score-text">0.0度</span>
   </div>
 
@@ -214,13 +270,26 @@
 
   <div class="card">
     <div class="score-row">
-      <span class="score-label">✨ すてーたす</span>
+      <span style="font-size:0.85rem; font-weight:bold; color:#a37c86;">✨ 糖度ステータス</span>
       <span id="static-score" class="settled-score">--</span>
     </div>
-    <div id="badge" class="badge">AIじゅんびちゅう…🎀</div>
-    <div id="desc" class="desc">枠のなかにバナナちゃんをドン！とおさえてボタンをおしてね♡</div>
-    <div id="recipe-box" class="recipe-box"></div>
-    <div id="ai-tag" class="ai-tag"></div>
+    <div id="badge" class="badge">カメラをつけてね♡</div>
+    <div id="desc" class="desc">枠の中にバナナをドン！とおさえてボタンを押してね♡</div>
+
+    <!-- しれっと再出現するチャート -->
+    <div id="inline-chart" class="inline-chart-area">
+      <div class="inline-chart-title">📊 公式熟度チャート現在位置</div>
+      <div class="chart-grid" id="chart-slots">
+        <div class="stage-card" id="st-1"><span class="s-icon">🟢</span>St.1<br>極草</div>
+        <div class="stage-card" id="st-2"><span class="s-icon">🍏</span>St.2<br>硬草</div>
+        <div class="stage-card" id="st-3"><span class="s-icon">🥑</span>St.3<br>渋若</div>
+        <div class="stage-card" id="st-4"><span class="s-icon">🍈</span>St.4<br>早め</div>
+        <div class="stage-card" id="st-5"><span class="s-icon">🍌</span>St.5<br>標準</div>
+        <div class="stage-card" id="st-6"><span class="s-icon">💛</span>St.6<br>美黄</div>
+        <div class="stage-card" id="st-7"><span class="s-icon">🍯</span>St.7<br>蜜神</div>
+        <div class="stage-card" id="st-8"><span class="s-icon">🟤</span>St.8<br>ドロ</div>
+      </div>
+    </div>
   </div>
 
   <div class="btn-group">
@@ -247,16 +316,27 @@
     const guide = document.getElementById('guide');
     const badge = document.getElementById('badge');
     const desc = document.getElementById('desc');
-    const recipeBox = document.getElementById('recipe-box');
-    const aiTag = document.getElementById('ai-tag');
     const mainBtn = document.getElementById('main-btn');
     const retakeBtn = document.getElementById('retake-btn');
     const flyingPack = document.getElementById('flying-pack');
     const flyingScore = document.getElementById('flying-score');
     const staticScore = document.getElementById('static-score');
     const faceIcon = document.getElementById('face-icon');
+    const giantChart = document.getElementById('giant-chart');
+    const inlineChart = document.getElementById('inline-chart');
 
-    // レトロピコピコ効果音（Web Audio API）
+    // ページ起動時に「ばーーーーん！➔ しゅーーーっ」
+    window.addEventListener('DOMContentLoaded', () => {
+      triggerGiantChart();
+    });
+
+    function triggerGiantChart() {
+      giantChart.className = 'giant-chart-overlay show-bam';
+      setTimeout(() => {
+        giantChart.className = 'giant-chart-overlay fade-shuuu';
+      }, 1600);
+    }
+
     function playBeep(freq, type, duration) {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -273,64 +353,16 @@
       } catch(e) {}
     }
 
-    function playBling() {
-      playBeep(523, 'sine', 0.1);
-      setTimeout(() => playBeep(659, 'sine', 0.1), 100);
-      setTimeout(() => playBeep(784, 'sine', 0.2), 200);
-    }
-
-    // きゃわわ激辛セリフAI辞書 ＆ 狂気のアレンジガチャ
-    const DICTIONARY = {
-      human: [
-        { badge: '🍖 それ人間の手やろがいっ！', desc: '手や指をみせないで〜！AIちゃんも「それ人間の一部です」ってドン引きしてるよ？', recipe: '💡【救済策】今すぐ高級ハンドクリームを塗りたくって安静にしてください。', face: '😡' },
-        { badge: '🖐️ 人肉スキャンはだめ〜！', desc: 'バナナの皮かぶってから出直してきてね♡毛穴しかみえないよ！', recipe: '💡【救済策】手を黄色く塗っても糖度は上がりません。諦めましょう。', face: '💢' }
-      ],
-      banana_unripe: [
-        { badge: '🤮 渋っっ！ガッチガチの草！', desc: '青汁よりしぶ〜い！噛んだ瞬間きゅってなるやつ！ゴリラも窓からポイするレベルだよ！', recipe: '💡【救済策】薄切りにしてフライパンで揚げ焼きにして塩を振れ！ポテチの味になるぞ！', face: '🥶' },
-        { badge: '🪵 木片かじってるのぉ？', desc: 'えぐみの暴力〜！お口の水分ぜんぶ持っていかれちゃうよ！3日寝かせてね♡', recipe: '💡【救済策】ラップに包んでレンジで30秒チンして追熟を強引に偽装せよ！', face: '😱' }
-      ],
-      banana_ripe: [
-        { badge: '🍯 蜜のきわみ！自壊寸前っ！', desc: '糖度バクハツ〜！あまあまパラダイス！今すぐおなかにシュートしてぇ！！', recipe: '💡【救済策】牛乳と一緒にミキサーにぶち込んで一気飲みだ！噛む必要すらない！', face: '🤤' },
-        { badge: '🔥 かんじゅく神降臨〜✨', desc: 'シュガースポット全開だよ！飲む液体スイーツ！今日ちゅうに食べてね♡', recipe: '💡【救済策】ラップして冷凍庫へ突っ込め！天然の濃厚バナナアイス完成！', face: '😍' }
-      ],
-      banana_normal: [
-        { badge: '🍌 ふつうのバナナちゃん。', desc: 'THE・ひょうじゅん！スーパーのチラシにのってる通りの無難なお味だよ〜。', recipe: '💡【救済策】普通に皮をむいて、普通に食べてください。それが一番です。', face: '🙂' }
-      ]
-    };
-
-    function pickRandom(list) {
-      return list[Math.floor(Math.random() * list.length)];
-    }
-
-    // 超高音きゃわわ読み上げ（抑揚と句読点を細かく区切って不自然さを破壊）
     function speakCute(spokenScore, text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-
-      // ひらがなで区切り、句読点を多めにして人間味のあるリズムに調教
       const cleanText = text.replace(/[！〜♡✨]/g, '、');
-      const utterText = `${spokenScore}。 ${cleanText}`;
-      const uttr = new SpeechSynthesisUtterance(utterText);
+      const uttr = new SpeechSynthesisUtterance(`${spokenScore}。 ${cleanText}`);
       uttr.lang = 'ja-JP';
-      uttr.rate = 1.25;  // テンポよく
-      uttr.pitch = 1.6;  // 超高音アニメボイス
-
-      const voices = window.speechSynthesis.getVoices();
-      const cuteVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Siri') || v.name.includes('Nanami')) && v.lang.includes('ja'));
-      if (cuteVoice) uttr.voice = cuteVoice;
-
+      uttr.rate = 1.25;
+      uttr.pitch = 1.6;
       window.speechSynthesis.speak(uttr);
     }
-
-    async function loadAI() {
-      try {
-        net = await mobilenet.load();
-        badge.innerText = 'AIじゅんび完了！カメラつけてね✨';
-      } catch (e) {
-        badge.innerText = 'AIロード失敗（通常モードで動くよ）';
-      }
-    }
-    loadAI();
 
     async function handleAction() {
       if (!stream) {
@@ -340,8 +372,7 @@
             audio: false
           });
           video.srcObject = stream;
-          mainBtn.innerText = '🔍 きゃわわスキャン開始！';
-          playBeep(440, 'sine', 0.1);
+          mainBtn.innerText = '🔍 きゃわわスキャン！';
         } catch (e) {
           alert('カメラ許可エラーだよ: ' + e.message);
         }
@@ -369,9 +400,7 @@
       return [h * 360, s * 100, v * 100];
     }
 
-    async function runAnalysis() {
-      playBeep(880, 'square', 0.15);
-
+    function runAnalysis() {
       snapCanvas.width = video.videoWidth;
       snapCanvas.height = video.videoHeight;
       snapCanvas.getContext('2d').drawImage(video, 0, 0);
@@ -382,19 +411,6 @@
       mainBtn.style.display = 'none';
       retakeBtn.style.display = 'block';
 
-      badge.innerText = '🧠 AIちゃんが考え中…💭';
-
-      let isBanana = false;
-      if (net) {
-        try {
-          const predictions = await net.classify(snapCanvas);
-          if (predictions && predictions.length > 0) {
-            aiTag.innerText = `🤖 AI判定: ${predictions[0].className} (${(predictions[0].probability * 100).toFixed(1)}%)`;
-            isBanana = predictions.some(p => p.className.toLowerCase().includes('banana'));
-          }
-        } catch (err) {}
-      }
-
       const sx = video.videoWidth * 0.15;
       const sy = video.videoHeight * 0.15;
       const sw = video.videoWidth * 0.7;
@@ -402,40 +418,92 @@
       calcCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 100, 100);
       const data = calcCtx.getImageData(0, 0, 100, 100).data;
 
-      analyzeBanana(data, isBanana);
+      let green = 0, yellow = 0, spot = 0, skin = 0, total = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const [h, s, v] = rgbToHsv(data[i], data[i+1], data[i+2]);
+        total++;
+        if (h >= 5 && h <= 30 && s >= 12 && s <= 45 && v >= 40) skin++;
+        else if (h >= 45 && h <= 155 && s > 18 && v > 15) green++;
+        else if (h >= 32 && h < 45 && s > 30 && v > 35) yellow++;
+        else if (h >= 10 && h < 32 && s > 45 && v >= 15 && v <= 35) spot++;
+      }
+
+      // 手
+      if (skin / total > 0.3) {
+        badge.innerText = '🍖 それ人間の手やろがい！';
+        desc.innerText = 'バナナの皮かぶってから出直してきてね♡';
+        faceIcon.innerText = '😡';
+        startBounce('0.0度', 'とうど、れいてんれい ど', 'それ人間の手やろがい！', null);
+        return;
+      }
+
+      const bananaPixels = green + yellow + spot || 1;
+      const gRatio = green / bananaPixels;
+      const sRatio = spot / bananaPixels;
+
+      // 公式ステージ割り当て
+      let stage = 6;
+      let scoreText = '16.5度';
+      let badgeText = '💛 Stage 6：フルイエロー';
+      let descText = '標準的な美味しさ！無難に美味しく食べられるよ♡';
+      let face = '🙂';
+
+      if (gRatio > 0.45) {
+        stage = 1; scoreText = '7.0度'; badgeText = '🟢 Stage 1：オールグリーン（極草）';
+        descText = 'ガッチガチの木片！ゴリラも窓から捨てるレベル！'; face = '🥶';
+      } else if (gRatio > 0.25) {
+        stage = 2; scoreText = '8.4度'; badgeText = '🍏 Stage 2：青バナナ（硬草）';
+        descText = '渋っっ！口の水分ぜんぶ持っていかれるやつ！'; face = '😱';
+      } else if (gRatio > 0.12) {
+        stage = 3; scoreText = '11.5度'; badgeText = '🥑 Stage 3：微熟（渋若）';
+        descText = 'まだ青臭さが残る若武者！追熟させろ！'; face = '🥺';
+      } else if (gRatio > 0.05) {
+        stage = 4; scoreText = '13.8度'; badgeText = '🍈 Stage 4：先緑';
+        descText = 'さっぱり酸味系！スムージーにおすすめ！'; face = '😋';
+      } else if (sRatio > 0.35) {
+        stage = 8; scoreText = '22.5度'; badgeText = '🟤 Stage 8：ダップル（過熟）';
+        descText = 'ドロドロ自壊寸前！今すぐバナナケーキに錬成せよ！'; face = '🥴';
+      } else if (sRatio > 0.18) {
+        stage = 7; scoreText = '21.0度'; badgeText = '🍯 Stage 7：完熟スター（蜜神）';
+        descText = '甘みの極致！シュガースポット全開の神バナナ降臨！'; face = '😍';
+      }
+
+      badge.innerText = badgeText;
+      desc.innerText = descText;
+      faceIcon.innerText = face;
+
+      // しれっと再出現＆該当ステージを光らせる
+      showInlineChart(stage);
+      startBounce(scoreText, `とうど、${scoreText.replace('度','')} ど`, badgeText + '、' + descText, stage);
     }
 
-    function startBouncingPack(displayScore, spokenScore, speechText) {
+    function showInlineChart(targetStage) {
+      inlineChart.style.display = 'block';
+      for (let i = 1; i <= 8; i++) {
+        const el = document.getElementById(`st-${i}`);
+        if (el) el.classList.toggle('target-glow', i === targetStage);
+      }
+    }
+
+    function startBounce(displayScore, spokenScore, speechText, stage) {
       flyingScore.innerText = displayScore;
       flyingPack.style.display = 'block';
       staticScore.innerText = '--';
 
       posX = window.innerWidth / 3;
       posY = window.innerHeight / 3;
-      velX = (Math.random() > 0.5 ? 1 : -1) * (6 + Math.random() * 3);
-      velY = (Math.random() > 0.5 ? 1 : -1) * (6 + Math.random() * 3);
+      velX = (Math.random() > 0.5 ? 1 : -1) * 6;
+      velY = (Math.random() > 0.5 ? 1 : -1) * 6;
 
       function step() {
         posX += velX;
         posY += velY;
-
-        if (scaleGrowing) {
-          scale += 0.025;
-          if (scale > 1.6) scaleGrowing = false;
-        } else {
-          scale -= 0.025;
-          if (scale < 0.85) scaleGrowing = true;
-        }
+        if (scaleGrowing) { scale += 0.025; if (scale > 1.6) scaleGrowing = false; }
+        else { scale -= 0.025; if (scale < 0.85) scaleGrowing = true; }
 
         const packRect = flyingPack.getBoundingClientRect();
-        if (posX <= 0 || posX + packRect.width >= window.innerWidth) {
-          velX = -velX;
-          posX = Math.max(0, Math.min(posX, window.innerWidth - packRect.width));
-        }
-        if (posY <= 0 || posY + packRect.height >= window.innerHeight) {
-          velY = -velY;
-          posY = Math.max(0, Math.min(posY, window.innerHeight - packRect.height));
-        }
+        if (posX <= 0 || posX + packRect.width >= window.innerWidth) velX = -velX;
+        if (posY <= 0 || posY + packRect.height >= window.innerHeight) velY = -velY;
 
         flyingPack.style.left = posX + 'px';
         flyingPack.style.top = posY + 'px';
@@ -452,77 +520,12 @@
         cancelAnimationFrame(bounceAnimId);
         flyingPack.style.display = 'none';
         staticScore.innerText = displayScore;
-        staticScore.style.transform = 'scale(1.3)';
-        setTimeout(() => staticScore.style.transform = 'scale(1.0)', 300);
+        staticScore.style.transform = 'scale(1.25)';
+        setTimeout(() => staticScore.style.transform = 'scale(1.0)', 250);
 
-        playBling();
+        playBeep(659, 'sine', 0.15);
         speakCute(spokenScore, speechText);
-      }, 2400);
-    }
-
-    function analyzeBanana(data, isBananaByAI) {
-      let green = 0, yellow = 0, spot = 0, skin = 0, total = 0;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const [h, s, v] = rgbToHsv(data[i], data[i+1], data[i+2]);
-        total++;
-        if (h >= 5 && h <= 30 && s >= 12 && s <= 45 && v >= 40) skin++;
-        else if (h >= 45 && h <= 155 && s > 18 && v > 15) green++;
-        else if (h >= 32 && h < 45 && s > 30 && v > 35) yellow++;
-        else if (h >= 10 && h < 32 && s > 45 && v >= 15 && v <= 35) spot++;
-      }
-
-      if (!isBananaByAI && skin / total > 0.3) {
-        const res = pickRandom(DICTIONARY.human);
-        badge.innerText = res.badge;
-        badge.style.background = '#ffd1d1';
-        badge.style.color = '#d32f2f';
-        desc.innerText = res.desc;
-        recipeBox.innerText = res.recipe;
-        recipeBox.style.display = 'block';
-        faceIcon.innerText = res.face;
-        startBouncingPack('0.0度', 'とうど、れいてんれい ど', res.badge + '、' + res.desc);
-        return;
-      }
-
-      const bananaPixels = green + yellow + spot;
-      const gRatio = green / (bananaPixels || 1);
-      const sRatio = spot / (bananaPixels || 1);
-
-      if (gRatio > 0.10) {
-        const rawNum = (7.0 + (1 - gRatio) * 3).toFixed(1);
-        const res = pickRandom(DICTIONARY.banana_unripe);
-        badge.innerText = res.badge;
-        badge.style.background = '#d4edda';
-        badge.style.color = '#155724';
-        desc.innerText = res.desc;
-        recipeBox.innerText = res.recipe;
-        recipeBox.style.display = 'block';
-        faceIcon.innerText = res.face;
-        startBouncingPack(`${rawNum}度`, `とうど、${rawNum} ど`, res.badge + '、' + res.desc);
-      } else if (sRatio > 0.25) {
-        const rawNum = (21.0 + Math.min(sRatio, 0.4) * 4).toFixed(1);
-        const res = pickRandom(DICTIONARY.banana_ripe);
-        badge.innerText = res.badge;
-        badge.style.background = '#ffeeba';
-        badge.style.color = '#856404';
-        desc.innerText = res.desc;
-        recipeBox.innerText = res.recipe;
-        recipeBox.style.display = 'block';
-        faceIcon.innerText = res.face;
-        startBouncingPack(`${rawNum}度`, `とうど、${rawNum} ど`, res.badge + '、' + res.desc);
-      } else {
-        const rawNum = (14.5 + Math.random() * 2).toFixed(1);
-        const res = pickRandom(DICTIONARY.banana_normal);
-        badge.innerText = res.badge;
-        badge.style.background = '#fff3cd';
-        badge.style.color = '#856404';
-        desc.innerText = res.desc;
-        recipeBox.innerText = res.recipe;
-        recipeBox.style.display = 'block';
-        faceIcon.innerText = res.face;
-        startBouncingPack(`${rawNum}度`, `とうど、${rawNum} ど`, res.badge + '、' + res.desc);
-      }
+      }, 2300);
     }
 
     function retake() {
@@ -537,13 +540,13 @@
       guide.style.display = 'block';
       mainBtn.style.display = 'block';
       retakeBtn.style.display = 'none';
+      inlineChart.style.display = 'none';
       badge.innerText = 'バナナちゃんをうつしてね♡';
-      badge.style.background = '#ffe3ee';
-      badge.style.color = '#d81b60';
-      desc.innerText = '枠のなかにバナナちゃんをドン！とおさえてボタンをおしてね♡';
-      recipeBox.style.display = 'none';
-      aiTag.innerText = '';
+      desc.innerText = '枠の中にバナナをドン！とおさえてボタンを押してね♡';
       faceIcon.innerText = '🍌';
+
+      // もう一回ばーーーーん！
+      triggerGiantChart();
     }
   </script>
 </body>
