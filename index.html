@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍌 喋る！激辛AIスキャナー 🥞</title>
+  <title>🍌✨ きゃわわ♡バナナ＆お好み焼きスキャナー ✨🥞</title>
   <!-- TensorFlow.js & MobileNet CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
@@ -11,8 +11,8 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: linear-gradient(135deg, #fff9e6 0%, #ffe4e6 100%);
-      color: #4a3b32;
+      background: radial-gradient(circle, #fff0f5 0%, #ffe4ec 50%, #ffd1dc 100%);
+      color: #5c3d46;
       font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
@@ -21,38 +21,56 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
+    
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0 8px;
+    }
     h1 {
       font-size: 1.2rem;
-      margin: 4px 0 8px;
-      color: #ff5e7e;
-      text-shadow: 1px 1px 0 #fff;
+      margin: 0;
+      color: #ff4081;
+      text-shadow: 2px 2px 0 #fff;
+    }
+    .banana-icon {
+      font-size: 1.6rem;
+      animation: swing 2s ease-in-out infinite alternate;
+      display: inline-block;
+    }
+    @keyframes swing {
+      0% { transform: rotate(-15deg); }
+      100% { transform: rotate(15deg) scale(1.1); }
     }
 
     .mode-selector {
       display: flex;
-      background: #fff;
-      border-radius: 25px;
+      background: #ffffff;
+      border-radius: 30px;
       padding: 4px;
       margin-bottom: 8px;
       width: 100%;
       max-width: 320px;
-      box-shadow: 0 4px 10px rgba(255, 182, 193, 0.4);
+      box-shadow: 0 4px 15px rgba(255, 105, 180, 0.25);
+      border: 2px solid #ffccd7;
     }
     .mode-btn {
       flex: 1;
       padding: 8px;
       font-size: 0.9rem;
-      font-weight: 800;
+      font-weight: 900;
       border: none;
       background: transparent;
-      color: #a08c84;
-      border-radius: 20px;
+      color: #b08d96;
+      border-radius: 25px;
       cursor: pointer;
+      transition: 0.2s all;
     }
     .mode-btn.active {
-      background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+      background: linear-gradient(135deg, #ff6b9d 0%, #ff8dae 100%);
       color: #fff;
-      box-shadow: 0 2px 6px rgba(255, 117, 140, 0.4);
+      box-shadow: 0 3px 8px rgba(255, 107, 157, 0.4);
     }
 
     .camera-wrapper {
@@ -60,11 +78,11 @@
       width: 100%;
       max-width: 320px;
       height: 290px;
-      border-radius: 20px;
+      border-radius: 28px;
       overflow: hidden;
-      background: #222;
-      border: 4px solid #fff;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      background: #333;
+      border: 5px solid #fff;
+      box-shadow: 0 8px 24px rgba(255, 105, 180, 0.2);
     }
     video, canvas#snapshot {
       width: 100%;
@@ -77,9 +95,31 @@
       left: 15%;
       width: 70%;
       height: 70%;
-      border: 3px dashed #ffb830;
-      border-radius: 16px;
+      border: 3px dashed #ff8dae;
+      border-radius: 20px;
       pointer-events: none;
+      box-shadow: inset 0 0 15px rgba(255, 141, 174, 0.4);
+    }
+
+    /* 飛び回る要素コンテナ */
+    .bouncing-pack {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .bouncing-banana {
+      font-size: 3.5rem;
+      display: block;
+      filter: drop-shadow(0 8px 15px rgba(255, 105, 180, 0.5));
+    }
+    .bouncing-score-text {
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: #ff1493;
+      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 0 6px 20px rgba(255, 20, 147, 0.5);
     }
 
     .card {
@@ -87,68 +127,59 @@
       width: 100%;
       max-width: 320px;
       background: #ffffff;
-      border-radius: 20px;
-      padding: 14px;
+      border-radius: 24px;
+      padding: 14px 16px;
       margin-top: 10px;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.05);
-      border: 2px solid #fff0f5;
+      box-shadow: 0 6px 20px rgba(255, 182, 193, 0.3);
+      border: 3px solid #fff5f7;
     }
     .score-row {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
-      min-height: 48px;
+      min-height: 52px;
     }
     .score-label {
       font-size: 0.85rem;
       font-weight: bold;
-      color: #8c7a70;
+      color: #a37c86;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
     
-    /* 画面内を飛び回るスコア */
-    .bouncing-score {
-      position: fixed;
-      font-size: 3.8rem;
-      font-weight: 900;
-      color: #ff1e56;
-      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 0 8px 25px rgba(255, 30, 86, 0.6);
-      pointer-events: none;
-      z-index: 9999;
-      display: none;
-      white-space: nowrap;
-    }
-
-    /* 定位置に戻ったときの特大スコア */
     .settled-score {
-      font-size: 2.6rem;
+      font-size: 2.8rem;
       font-weight: 900;
-      color: #ff1e56;
+      color: #ff2a70;
       transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-shadow: 2px 2px 0 #ffe0e9;
     }
 
     .badge {
       display: inline-block;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 20px;
       font-size: 0.82rem;
-      font-weight: 800;
+      font-weight: 900;
       margin: 6px 0;
-      background: #ffe3e8;
+      background: #ffe3ee;
       color: #d81b60;
+      border: 1px solid #ffccd7;
     }
     .desc {
-      font-size: 0.85rem;
-      color: #4a3b32;
-      line-height: 1.45;
-      background: #fff8f0;
-      padding: 10px;
-      border-radius: 12px;
-      border-left: 4px solid #ffb830;
-      font-weight: 600;
+      font-size: 0.86rem;
+      color: #5c3d46;
+      line-height: 1.5;
+      background: #fff8fa;
+      padding: 12px;
+      border-radius: 16px;
+      border-left: 5px solid #ff8dae;
+      font-weight: 700;
     }
     .ai-tag {
       font-size: 0.72rem;
-      color: #6c757d;
+      color: #b08d96;
       margin-top: 4px;
     }
 
@@ -161,32 +192,39 @@
     }
     .action-btn {
       flex: 1;
-      padding: 12px;
-      font-size: 1rem;
+      padding: 13px;
+      font-size: 1.05rem;
       font-weight: 900;
       border: none;
-      border-radius: 14px;
+      border-radius: 20px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+      transition: transform 0.1s;
     }
+    .action-btn:active { transform: scale(0.96); }
     .btn-scan {
-      background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+      background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
       color: #fff;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
     }
     .btn-retake {
-      background: #e2e8f0;
-      color: #4a5568;
+      background: #f0e6ea;
+      color: #6d555c;
       display: none;
     }
   </style>
 </head>
 <body>
 
-  <h1>🍌 喋る！激辛スキャナー 🥞</h1>
+  <div class="title-area">
+    <span class="banana-icon">🍌</span>
+    <h1>きゃわわ♡激辛スキャナー</h1>
+    <span class="banana-icon" style="animation-delay: -1s;">🥞</span>
+  </div>
 
   <div class="mode-selector">
-    <button id="btn-mode-banana" class="mode-btn active" onclick="switchMode('banana')">🍌 バナナ</button>
-    <button id="btn-mode-okonomi" class="mode-btn" onclick="switchMode('okonomi')">🥞 お好み焼き</button>
+    <button id="btn-mode-banana" class="mode-btn active" onclick="switchMode('banana')">🍌 バナナちゃん</button>
+    <button id="btn-mode-okonomi" class="mode-btn" onclick="switchMode('okonomi')">🥞 お好み焼きさん</button>
   </div>
 
   <div class="camera-wrapper">
@@ -195,24 +233,27 @@
     <div id="guide" class="guide-frame"></div>
   </div>
 
-  <!-- 飛び回るスコア -->
-  <div id="flying-score" class="bouncing-score">0.0度</div>
+  <!-- 飛び回るバナナ＆点数パック -->
+  <div id="flying-pack" class="bouncing-pack">
+    <span id="flying-emoji" class="bouncing-banana">🍌</span>
+    <span id="flying-score" class="bouncing-score-text">0.0度</span>
+  </div>
 
   <canvas id="calc-canvas" width="100" height="100" style="display:none;"></canvas>
 
   <div class="card">
     <div class="score-row">
-      <span class="score-label" id="score-label">推定スコア</span>
+      <span class="score-label" id="score-label">✨ すてーたす</span>
       <span id="static-score" class="settled-score">--</span>
     </div>
-    <div id="badge" class="badge">AIモデル読み込み中...</div>
-    <div id="desc" class="desc">枠内にターゲットを収めてスキャンを押してね！</div>
+    <div id="badge" class="badge">AIじゅんびちゅう…🎀</div>
+    <div id="desc" class="desc">枠のなかにターゲットをドン！とおさえてボタンをおしてね♡</div>
     <div id="ai-tag" class="ai-tag"></div>
   </div>
 
   <div class="btn-group">
-    <button id="main-btn" class="action-btn btn-scan" onclick="handleAction()">📸 カメラを起動！</button>
-    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">🔄 もう一回スキャン</button>
+    <button id="main-btn" class="action-btn btn-scan" onclick="handleAction()">📸 カメラをつける！</button>
+    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">🔄 もう一回みる♡</button>
   </div>
 
   <script>
@@ -223,7 +264,7 @@
     let bounceTimer = null;
 
     let posX = 50, posY = 50;
-    let velX = 5, velY = 6;
+    let velX = 6, velY = 7;
     let scale = 1.0;
     let scaleGrowing = true;
 
@@ -237,40 +278,42 @@
     const aiTag = document.getElementById('ai-tag');
     const mainBtn = document.getElementById('main-btn');
     const retakeBtn = document.getElementById('retake-btn');
+    const flyingPack = document.getElementById('flying-pack');
     const flyingScore = document.getElementById('flying-score');
+    const flyingEmoji = document.getElementById('flying-emoji');
     const staticScore = document.getElementById('static-score');
 
-    // 煽りセリフのランダムAI辞書
+    // きゃわわ激辛セリフAI辞書
     const DICTIONARY = {
       human: [
-        { badge: '🍖 それ人間の手やろがい！', desc: '手や指を差し出すな！AIも「それ人間の一部です」って呆れてるぞ！' },
-        { badge: '🖐️ 人肉スキャン禁止！', desc: 'バナナの皮かぶってから出直してきな？毛穴しか見えんわ！' },
-        { badge: '🤦 誰の手やねん！', desc: '糖度なんかあるわけないやろ！今すぐハンドクリーム塗って寝ろ！' }
+        { badge: '🍖 それ人間の手やろがいっ！', desc: '手や指をみせないで〜！AIちゃんも「それ人間の一部です」ってドン引きしてるよ？' },
+        { badge: '🖐️ 人肉スキャンはだめ〜！', desc: 'バナナの皮かぶってから出直してきてね♡毛穴しかみえないよ！' },
+        { badge: '🤦 誰のお手てですかー！', desc: '糖度なんかあるわけないじゃん！今すぐハンドクリームぬって寝て！' }
       ],
       banana_unripe: [
-        { badge: '🤮 渋っっ！ガッチガチの草！', desc: '青汁より渋い！噛んだ瞬間「キュッ」って鳴る硬さ。今食ったら腹壊すぞ！' },
-        { badge: '🪵 木片かじってんの？', desc: 'エグ味の極弾！ゴリラも窓から投げ捨てるレベル。3日寝かせろ！' },
-        { badge: '🥦 ほぼブロッコリー！', desc: '果物名乗るな！ただの繊維の塊！食後ずっと舌がザラつくやつ！' }
+        { badge: '🤮 渋っっ！ガッチガチの草！', desc: '青汁よりしぶ〜い！かんだ瞬間きゅってなるやつ！ゴリラも窓からポイするレベルだよ！' },
+        { badge: '🪵 木片かじってるのぉ？', desc: 'えぐみの暴力〜！お口の水分ぜんぶ持っていかれちゃうよ！3日ねかせてね♡' },
+        { badge: '🥦 ほぼブロッコリーちゃん！', desc: 'くだもの名乗っちゃだめ！ただの繊維のカタマリ！あとで舌がザラザラになるよ！' }
       ],
       banana_ripe: [
-        { badge: '🍯 蜜の極み！自壊寸前！', desc: '糖度爆発！甘党歓喜のドロ甘状態！今すぐ胃袋にシュートしろ！！' },
-        { badge: '🔥 完熟神降臨！', desc: 'シュガースポット全開！もはや飲む液体スイーツ！今日中に食え！' }
+        { badge: '🍯 蜜のきわみ！自壊寸前っ！', desc: '糖度バクハツ〜！あまあまパラダイス！今すぐおなかにシュートしてぇ！！' },
+        { badge: '🔥 かんじゅく神降臨〜✨', desc: 'シュガースポット全開だよ！飲む液体スイーツ！今日ちゅうに食べてね♡' }
       ],
       banana_normal: [
-        { badge: '🍌 普通のバナナ。', desc: 'THE・標準。可もなく不可もない、スーパーのチラシ通りの無難な味。' },
-        { badge: '😐 コメントに困る味', desc: '一番リアクションしづらい優等生。普通に食べなさい。' }
+        { badge: '🍌 ふつうのバナナちゃん。', desc: 'THE・ひょうじゅん！スーパーのチラシにのってる通りの無難なお味だよ〜。' },
+        { badge: '😐 コメントに困る味…', desc: 'いちばんリアクションしづらい優等生！おいしく食べてあげてね♡' }
       ],
       okonomi_burnt: [
-        { badge: '🚨 炭化警報！即死案件！', desc: '炭素錬成完了！鉄板の焦げ付き削り取ってどうすんねん！救出せよ！' },
-        { badge: '🪨 まるで炭鉱の石！', desc: '苦味のダイナマイト！ガリガリ言って顎外れるぞ！' }
+        { badge: '🚨 たんか警報！即死案件！', desc: '炭素れんせい完了〜！鉄板のこげ削り取ってどうするのっ！きゅうしゅつして！' },
+        { badge: '🪨 まるで炭鉱の石ころ！', desc: 'にがみのダイナマイト！ガリガリ言ってあご外れちゃうよ〜！' }
       ],
       okonomi_perfect: [
-        { badge: '🔥 神の焼き加減！優勝！', desc: 'カリッふわの黄金比率！マヨビームと青のり投下して今すぐ食え！！' },
-        { badge: '🏆 鉄板の魔術師！', desc: '外サク中フワの極致！ビール持ってこい！優勝決定！' }
+        { badge: '🔥 神のやき加減！ゆうしょう！', desc: 'カリッふわの黄金比率だよ！マヨビームと青のりかけて今すぐ食べてぇ！！' },
+        { badge: '🏆 鉄板の魔術師あらわる！', desc: '外サク中フワの極み！ビール持ってきてぇ！優勝決定〜✨' }
       ],
       okonomi_raw: [
-        { badge: '💧 生焼け！もんじゃかよ！', desc: '中身ドロッドロ！今ひっくり返したら鉄板が大惨事になるぞ！触るな！' },
-        { badge: '⏳ 焦るな！まだ粉！', desc: 'まだ小麦粉ジュースやぞ！じっくりフタして待たんかい！' }
+        { badge: '💧 生焼け〜！もんじゃかよ！', desc: '中身ドロッドロだよ！今ひっくり返したら大惨事になっちゃう！さわらないで！' },
+        { badge: '⏳ あせるな！まだ粉！', desc: 'まだ小麦粉ジュースだよ！じっくりフタして待つべし！' }
       ]
     };
 
@@ -278,23 +321,31 @@
       return list[Math.floor(Math.random() * list.length)];
     }
 
-    // 音声読み上げ
-    function speak(text) {
+    // きゃわわ自然音声読み上げ（女性声＆ピッチ調整）
+    function speakCute(spokenScore, text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      const uttr = new SpeechSynthesisUtterance(text);
+
+      // 「度」は「ど」と平仮名にして誤読撲滅
+      const utterText = `${spokenScore}！ ${text}`;
+      const uttr = new SpeechSynthesisUtterance(utterText);
       uttr.lang = 'ja-JP';
-      uttr.rate = 1.15; // やや早口で小気味よく
-      uttr.pitch = 1.2; // 少しテンション高め
+      uttr.rate = 1.12;
+      uttr.pitch = 1.35; // 高めのきゃわわトーン
+
+      const voices = window.speechSynthesis.getVoices();
+      const cuteVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Nanami') || v.name.includes('Siri')) && v.lang.includes('ja'));
+      if (cuteVoice) uttr.voice = cuteVoice;
+
       window.speechSynthesis.speak(uttr);
     }
 
     async function loadAI() {
       try {
         net = await mobilenet.load();
-        badge.innerText = 'AI準備完了！カメラをつけてね✨';
+        badge.innerText = 'AIじゅんび完了！カメラつけてね✨';
       } catch (e) {
-        badge.innerText = 'AIロード失敗（通常モード動作）';
+        badge.innerText = 'AIロード失敗（通常モードで動くよ）';
       }
     }
     loadAI();
@@ -303,6 +354,7 @@
       currentMode = mode;
       document.getElementById('btn-mode-banana').classList.toggle('active', mode === 'banana');
       document.getElementById('btn-mode-okonomi').classList.toggle('active', mode === 'okonomi');
+      flyingEmoji.innerText = (mode === 'banana') ? '🍌' : '🥞';
       retake();
     }
 
@@ -314,9 +366,9 @@
             audio: false
           });
           video.srcObject = stream;
-          mainBtn.innerText = '🔍 激辛スキャン開始！';
+          mainBtn.innerText = '🔍 きゃわわスキャン開始！';
         } catch (e) {
-          alert('カメラ許可エラー: ' + e.message);
+          alert('カメラ許可エラーだよ: ' + e.message);
         }
       } else {
         runAnalysis();
@@ -353,7 +405,7 @@
       mainBtn.style.display = 'none';
       retakeBtn.style.display = 'block';
 
-      badge.innerText = '🧠 AI思考中...';
+      badge.innerText = '🧠 AIちゃんが考え中…💭';
 
       let isBanana = false;
       if (net) {
@@ -380,42 +432,42 @@
       }
     }
 
-    // 飛び回った後、本来の位置へ戻るアニメーション
-    function startScoreBounce(scoreText, speechText) {
-      flyingScore.innerText = scoreText;
-      flyingScore.style.display = 'block';
+    // バナナと点数が画面中を飛び回り、定位置へ吸い込まれる
+    function startBouncingPack(displayScore, spokenScore, speechText) {
+      flyingScore.innerText = displayScore;
+      flyingPack.style.display = 'block';
       staticScore.innerText = '--';
 
       posX = window.innerWidth / 3;
       posY = window.innerHeight / 3;
-      velX = (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 3);
-      velY = (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 3);
+      velX = (Math.random() > 0.5 ? 1 : -1) * (6 + Math.random() * 3);
+      velY = (Math.random() > 0.5 ? 1 : -1) * (6 + Math.random() * 3);
 
       function step() {
         posX += velX;
         posY += velY;
 
         if (scaleGrowing) {
-          scale += 0.02;
+          scale += 0.025;
           if (scale > 1.6) scaleGrowing = false;
         } else {
-          scale -= 0.02;
-          if (scale < 0.9) scaleGrowing = true;
+          scale -= 0.025;
+          if (scale < 0.85) scaleGrowing = true;
         }
 
-        const scoreRect = flyingScore.getBoundingClientRect();
-        if (posX <= 0 || posX + scoreRect.width >= window.innerWidth) {
+        const packRect = flyingPack.getBoundingClientRect();
+        if (posX <= 0 || posX + packRect.width >= window.innerWidth) {
           velX = -velX;
-          posX = Math.max(0, Math.min(posX, window.innerWidth - scoreRect.width));
+          posX = Math.max(0, Math.min(posX, window.innerWidth - packRect.width));
         }
-        if (posY <= 0 || posY + scoreRect.height >= window.innerHeight) {
+        if (posY <= 0 || posY + packRect.height >= window.innerHeight) {
           velY = -velY;
-          posY = Math.max(0, Math.min(posY, window.innerHeight - scoreRect.height));
+          posY = Math.max(0, Math.min(posY, window.innerHeight - packRect.height));
         }
 
-        flyingScore.style.left = posX + 'px';
-        flyingScore.style.top = posY + 'px';
-        flyingScore.style.transform = `scale(${scale}) rotate(${(posX % 40) - 20}deg)`;
+        flyingPack.style.left = posX + 'px';
+        flyingPack.style.top = posY + 'px';
+        flyingPack.style.transform = `scale(${scale}) rotate(${(posX % 50) - 25}deg)`;
 
         bounceAnimId = requestAnimationFrame(step);
       }
@@ -423,18 +475,17 @@
       if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
       bounceAnimId = requestAnimationFrame(step);
 
-      // 2.5秒間飛び回ったら元の場所に着地
+      // 2.6秒後に定位置へ帰還
       if (bounceTimer) clearTimeout(bounceTimer);
       bounceTimer = setTimeout(() => {
         cancelAnimationFrame(bounceAnimId);
-        flyingScore.style.display = 'none';
-        staticScore.innerText = scoreText;
-        staticScore.style.transform = 'scale(1.2)';
+        flyingPack.style.display = 'none';
+        staticScore.innerText = displayScore;
+        staticScore.style.transform = 'scale(1.3)';
         setTimeout(() => staticScore.style.transform = 'scale(1.0)', 300);
 
-        // 喋る！
-        speak(`${scoreText}！ ${speechText}`);
-      }, 2500);
+        speakCute(spokenScore, speechText);
+      }, 2600);
     }
 
     function analyzeBanana(data, isBananaByAI) {
@@ -455,7 +506,7 @@
         badge.style.background = '#ffd1d1';
         badge.style.color = '#d32f2f';
         desc.innerText = res.desc;
-        startScoreBounce('0.0度', res.badge + ' ' + res.desc);
+        startBouncingPack('0.0度', 'れいてんれい ど', res.badge + ' ' + res.desc);
         return;
       }
 
@@ -464,29 +515,29 @@
       const sRatio = spot / (bananaPixels || 1);
 
       if (gRatio > 0.10) {
-        const brix = (7.0 + (1 - gRatio) * 3).toFixed(1) + '度';
+        const rawNum = (7.0 + (1 - gRatio) * 3).toFixed(1);
         const res = pickRandom(DICTIONARY.banana_unripe);
         badge.innerText = res.badge;
         badge.style.background = '#d4edda';
         badge.style.color = '#155724';
         desc.innerText = res.desc;
-        startScoreBounce(brix, res.badge + ' ' + res.desc);
+        startBouncingPack(`${rawNum}度`, `${rawNum} ど`, res.badge + ' ' + res.desc);
       } else if (sRatio > 0.25) {
-        const brix = (21.0 + Math.min(sRatio, 0.4) * 4).toFixed(1) + '度';
+        const rawNum = (21.0 + Math.min(sRatio, 0.4) * 4).toFixed(1);
         const res = pickRandom(DICTIONARY.banana_ripe);
         badge.innerText = res.badge;
         badge.style.background = '#ffeeba';
         badge.style.color = '#856404';
         desc.innerText = res.desc;
-        startScoreBounce(brix, res.badge + ' ' + res.desc);
+        startBouncingPack(`${rawNum}度`, `${rawNum} ど`, res.badge + ' ' + res.desc);
       } else {
-        const brix = (14.5 + Math.random() * 2).toFixed(1) + '度';
+        const rawNum = (14.5 + Math.random() * 2).toFixed(1);
         const res = pickRandom(DICTIONARY.banana_normal);
         badge.innerText = res.badge;
         badge.style.background = '#fff3cd';
         badge.style.color = '#856404';
         desc.innerText = res.desc;
-        startScoreBounce(brix, res.badge + ' ' + res.desc);
+        startBouncingPack(`${rawNum}度`, `${rawNum} ど`, res.badge + ' ' + res.desc);
       }
     }
 
@@ -506,21 +557,21 @@
         badge.style.background = '#343a40';
         badge.style.color = '#ff6b6b';
         desc.innerText = res.desc;
-        startScoreBounce('4点', res.badge + ' ' + res.desc);
+        startBouncingPack('4点', 'よんてん', res.badge + ' ' + res.desc);
       } else if (perfect / total > 0.28) {
         const res = pickRandom(DICTIONARY.okonomi_perfect);
         badge.innerText = res.badge;
         badge.style.background = '#d4edda';
         badge.style.color = '#155724';
         desc.innerText = res.desc;
-        startScoreBounce('100点', res.badge + ' ' + res.desc);
+        startBouncingPack('100点', 'ひゃくてん満点', res.badge + ' ' + res.desc);
       } else {
         const res = pickRandom(DICTIONARY.okonomi_raw);
         badge.innerText = res.badge;
         badge.style.background = '#e2e3e5';
         badge.style.color = '#383d41';
         desc.innerText = res.desc;
-        startScoreBounce('18点', res.badge + ' ' + res.desc);
+        startBouncingPack('18点', 'じゅうはちてん', res.badge + ' ' + res.desc);
       }
     }
 
@@ -529,17 +580,17 @@
       if (bounceTimer) clearTimeout(bounceTimer);
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
-      flyingScore.style.display = 'none';
+      flyingPack.style.display = 'none';
       staticScore.innerText = '--';
       video.style.display = 'block';
       snapCanvas.style.display = 'none';
       guide.style.display = 'block';
       mainBtn.style.display = 'block';
       retakeBtn.style.display = 'none';
-      badge.innerText = 'ターゲットを映してね✨';
-      badge.style.background = '#ffe3e8';
+      badge.innerText = 'ターゲットをうつしてね♡';
+      badge.style.background = '#ffe3ee';
       badge.style.color = '#d81b60';
-      desc.innerText = '枠内にターゲットを収めてスキャンを押してね！';
+      desc.innerText = '枠のなかにターゲットをドン！とおさえてボタンをおしてね♡';
       aiTag.innerText = '';
     }
   </script>
