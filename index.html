@@ -3,339 +3,162 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍌✨ きゃわわ♡公式バナナ鑑定所 ✨🍌</title>
+  <title>🍌💥 無限名言バナナスカウター v53.0 💥🍌</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(circle, #fff0f5 0%, #ffe4ec 50%, #ffd1dc 100%);
-      color: #5c3d46;
-      font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", -apple-system, sans-serif;
+      background: #080c10;
+      color: #ffd700;
+      font-family: monospace, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 12px;
+      padding: 10px;
       min-height: 100vh;
       overflow-x: hidden;
     }
-
-    .header-area {
-      text-align: center;
-      margin: 4px 0 8px;
-      width: 100%;
-      max-width: 320px;
-    }
     h1 {
-      font-size: 1.2rem;
-      margin: 0;
-      color: #ff4081;
-      text-shadow: 2px 2px 0 #fff;
+      font-size: 1.05rem;
+      margin: 4px 0 8px;
+      color: #ffd700;
+      text-shadow: 0 0 10px #ff9900, 0 0 5px #ffd700;
+      letter-spacing: 2px;
     }
-    .banana-face {
-      font-size: 2rem;
-      display: inline-block;
-      animation: bounce 1.5s infinite alternate ease-in-out;
-    }
-    @keyframes bounce {
-      0% { transform: translateY(0) rotate(-8deg); }
-      100% { transform: translateY(-6px) rotate(8deg) scale(1.1); }
-    }
-
-    /* ばーーーーんと出てしゅーーーっと消える巨大チャートオーバーレイ */
-    .giant-chart-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(255, 240, 245, 0.95);
-      z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(0.5);
-    }
-    .giant-chart-overlay.show-bam {
-      opacity: 1;
-      transform: scale(1);
-      pointer-events: auto;
-    }
-    .giant-chart-overlay.fade-shuuu {
-      opacity: 0;
-      transform: scale(1.15) translateY(-30px);
-      pointer-events: none;
-    }
-
-    .chart-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-      max-width: 320px;
-    }
-    .stage-card {
-      background: #fff;
-      border: 2px solid #ffccd7;
-      border-radius: 12px;
-      padding: 6px 2px;
-      text-align: center;
-      font-size: 0.68rem;
-      font-weight: 900;
-      color: #7a5860;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      transition: all 0.3s;
-    }
-    .stage-card .s-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
-    
-    /* しれっと光るターゲット */
-    .stage-card.target-glow {
-      border: 3px solid #ff1493 !important;
-      background: #ffe3ee !important;
-      color: #d81b60 !important;
-      transform: scale(1.15);
-      box-shadow: 0 0 16px rgba(255, 20, 147, 0.7);
-      animation: pulse-glow 0.8s infinite alternate;
-      z-index: 2;
-    }
-    @keyframes pulse-glow {
-      0% { transform: scale(1.1); box-shadow: 0 0 8px #ff1493; }
-      100% { transform: scale(1.22); box-shadow: 0 0 22px #ff1493; }
-    }
-
-    .camera-wrapper {
+    .scouter-view {
       position: relative;
       width: 100%;
-      max-width: 320px;
-      height: 270px;
-      border-radius: 24px;
+      max-width: 360px;
+      height: 480px;
+      border-radius: 20px;
       overflow: hidden;
-      background: #222;
-      border: 4px solid #fff;
-      box-shadow: 0 6px 20px rgba(255, 105, 180, 0.25);
+      background: #000;
+      border: 3px solid #ffd700;
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
     }
-    video, canvas#snapshot {
+    video {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-    .guide-frame {
+    canvas#scouter-overlay {
       position: absolute;
-      top: 15%;
-      left: 15%;
-      width: 70%;
-      height: 70%;
-      border: 3px dashed #ff8dae;
-      border-radius: 18px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
     }
-
-    .card {
-      position: relative;
-      width: 100%;
-      max-width: 320px;
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 14px;
-      margin-top: 10px;
-      box-shadow: 0 6px 18px rgba(255, 182, 193, 0.3);
-      border: 2px solid #fff5f7;
-    }
-    .score-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      min-height: 46px;
-    }
-    .settled-score {
-      font-size: 2.6rem;
-      font-weight: 900;
-      color: #ff2a70;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 900;
-      margin: 4px 0;
-      background: #ffe3ee;
-      color: #d81b60;
-    }
-    .desc {
-      font-size: 0.82rem;
-      color: #5c3d46;
-      line-height: 1.45;
-      background: #fff8fa;
+    .hud-banner {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(20, 15, 0, 0.88);
+      border: 1px solid #ffd700;
+      border-radius: 10px;
       padding: 8px 10px;
-      border-radius: 12px;
-      border-left: 4px solid #ff8dae;
-      font-weight: 700;
-    }
-
-    /* しれっと出てくるインラインチャート */
-    .inline-chart-area {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 2px dashed #ffccd7;
-      display: none;
-    }
-    .inline-chart-title {
-      font-size: 0.76rem;
+      font-size: 0.82rem;
       font-weight: 900;
-      color: #ff4081;
-      margin-bottom: 6px;
+      color: #ffd700;
+      text-shadow: 0 0 5px #ffd700;
       text-align: center;
+      z-index: 5;
+      line-height: 1.4;
+      box-shadow: 0 0 10px rgba(255,215,0,0.3);
     }
-
-    .bouncing-pack {
-      position: fixed;
+    .hud-grid {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(rgba(255,215,0,0.05) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(255,215,0,0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
       pointer-events: none;
-      z-index: 9999;
-      display: none;
-      text-align: center;
     }
-    .bouncing-banana { font-size: 3.5rem; display: block; }
-    .bouncing-score-text {
-      font-size: 3.2rem;
-      font-weight: 900;
-      color: #ff1493;
-      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff;
-    }
-
-    .btn-group {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
+    .btn-start {
+      margin-top: 14px;
       width: 100%;
-      max-width: 320px;
-    }
-    .action-btn {
-      flex: 1;
-      padding: 12px;
-      font-size: 1rem;
+      max-width: 360px;
+      padding: 14px;
+      font-size: 1.1rem;
       font-weight: 900;
-      border: none;
-      border-radius: 16px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
-    }
-    .btn-scan {
-      background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+      background: linear-gradient(135deg, #ffcc00 0%, #ff3300 100%);
       color: #fff;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 100, 0, 0.6);
+      letter-spacing: 2px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
     }
-    .btn-retake { background: #f0e6ea; color: #6d555c; display: none; }
+    .btn-start:active { transform: scale(0.97); }
   </style>
 </head>
 <body>
 
-  <!-- ばーーーーんと出てしゅーーーっと消える全画面チャート -->
-  <div id="giant-chart" class="giant-chart-overlay">
-    <div style="font-size:1.8rem; font-weight:900; color:#ff4081; margin-bottom:8px;">🍌 公式熟度基準 🍌</div>
-    <div style="font-size:0.85rem; font-weight:700; color:#7a5860; margin-bottom:14px;">目指せStage 7（シュガースポット）！</div>
-    <div class="chart-grid">
-      <div class="stage-card"><span class="s-icon">🟢</span>St.1<br>オール緑</div>
-      <div class="stage-card"><span class="s-icon">🍏</span>St.2<br>青バナナ</div>
-      <div class="stage-card"><span class="s-icon">🥑</span>St.3<br>微熟</div>
-      <div class="stage-card"><span class="s-icon">🍈</span>St.4<br>先緑</div>
-      <div class="stage-card"><span class="s-icon">🍌</span>St.5<br>グリーン</div>
-      <div class="stage-card"><span class="s-icon">💛</span>St.6<br>フルイエロー</div>
-      <div class="stage-card" style="border-color:#ff9800;"><span class="s-icon">🍯</span>St.7<br>完熟極甘</div>
-      <div class="stage-card"><span class="s-icon">🟤</span>St.8<br>過熟</div>
-    </div>
-  </div>
+  <h1>🍌 無限名言バナナスカウター v53.0 🍌</h1>
 
-  <div class="header-area">
-    <h1>🍌 きゃわわバナナ鑑定所 🍌</h1>
-    <div id="face-icon" class="banana-face">🍌</div>
-  </div>
-
-  <div class="camera-wrapper">
+  <div class="scouter-view">
     <video id="video" autoplay playsinline></video>
-    <canvas id="snapshot" style="display: none;"></canvas>
-    <div id="guide" class="guide-frame"></div>
+    <div class="hud-grid"></div>
+    <div id="hud-banner" class="hud-banner">📡 スカウター起動待機中…</div>
+    <canvas id="scouter-overlay"></canvas>
   </div>
 
-  <div id="flying-pack" class="bouncing-pack">
-    <span class="bouncing-banana">🍌</span>
-    <span id="flying-score" class="bouncing-score-text">0.0度</span>
-  </div>
+  <canvas id="crop-canvas" width="40" height="40" style="display:none;"></canvas>
 
-  <canvas id="calc-canvas" width="100" height="100" style="display:none;"></canvas>
-
-  <div class="card">
-    <div class="score-row">
-      <span style="font-size:0.85rem; font-weight:bold; color:#a37c86;">✨ 糖度ステータス</span>
-      <span id="static-score" class="settled-score">--</span>
-    </div>
-    <div id="badge" class="badge">カメラをつけてね♡</div>
-    <div id="desc" class="desc">枠の中にバナナをドン！とおさえてボタンを押してね♡</div>
-
-    <!-- しれっと再出現するチャート -->
-    <div id="inline-chart" class="inline-chart-area">
-      <div class="inline-chart-title">📊 公式熟度チャート現在位置</div>
-      <div class="chart-grid" id="chart-slots">
-        <div class="stage-card" id="st-1"><span class="s-icon">🟢</span>St.1<br>極草</div>
-        <div class="stage-card" id="st-2"><span class="s-icon">🍏</span>St.2<br>硬草</div>
-        <div class="stage-card" id="st-3"><span class="s-icon">🥑</span>St.3<br>渋若</div>
-        <div class="stage-card" id="st-4"><span class="s-icon">🍈</span>St.4<br>早め</div>
-        <div class="stage-card" id="st-5"><span class="s-icon">🍌</span>St.5<br>標準</div>
-        <div class="stage-card" id="st-6"><span class="s-icon">💛</span>St.6<br>美黄</div>
-        <div class="stage-card" id="st-7"><span class="s-icon">🍯</span>St.7<br>蜜神</div>
-        <div class="stage-card" id="st-8"><span class="s-icon">🟤</span>St.8<br>ドロ</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="btn-group">
-    <button id="main-btn" class="action-btn btn-scan" onclick="handleAction()">📸 カメラをつける！</button>
-    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">🔄 もう一回みる♡</button>
-  </div>
+  <button id="start-btn" class="btn-start" onclick="initScouter()">💥 無限名言スカウター起動！！</button>
 
   <script>
-    let stream = null;
-    let net = null;
-    let bounceAnimId = null;
-    let bounceTimer = null;
-    let audioCtx = null;
+    // 🕵️ 無限掛け合わせスロット辞書（Base64暗号化）
+    const _SLOTS = {
+      // 完熟用パーツ（A x B x C で数万通り）
+      R_A: ["56eB44Gu5oim6ZeY5Yqb44GvNTMwMDAw44CC", "6KaL44KN77yB", "5oiR44GM55Sf5rav44Gr44CB", "44GK5YmN44Gv44KC44GG44CB", "5pyA6auY44Gr44CO44OP44Kk77yB44CP44Gj44Gm44CB", "56yR44GI44Gw44GE44GE44Go5oCd44GG44CB", "5aSp5omN44Gg44GL44KJ44CB", "5bem5omL44Gv5re744GI44KL44Gg44GR44CB", "44Kq44Os44Gv5LuK44Gq44KT44Gg44CB", "5pyI44Gr5Luj44KP44Gj44Gm44CB", "5Yud5Yip44Gu5rOV5YmH44Gv44CB", "44GT44GT44GL44KJ44Gv44CB", "55SY44GV44GM44CB", "44GK44Gw44GC44Gh44KD44KT44GM6KiA44Gj44Gm44GE44Gf44CB"],
+      R_B: ["44K344Ol44Ks44O844K544Od44OD44OI44GM54af44GN6YCa44KK44CB", "5a6M54af44Gu5qW144Gr6YGU44GX44CB", "56We44Gu6aGY5Z+f44Gr6YGU44GX44CB", "55SY44GV44GM44GC44G144KM5Ye644Gm44CB", "6aOf44G56aCD44OU44O844Kv44Gr6YGU44GX44CB", "5by36ICF44Gu6aaZ5rCX44KS5pS+44Gh44CB", "6auY5qCh55Sf44GM44Gq44KB44KL55SY44GV44Gn44CB", "54af44GN5pyb44Gu44Km44Os44Km44Os44Gn44CB"],
+      R_C: ["5LiA54mH44Gu5oKUI44Gq44GX77yB", "55qu44KS44KA44GP44KT44Gg77yB", "55SY44KE44GL44GX44Gm44KI77yB", "5YWo6aOf44GX44Gm44KE44KL44Gc77yB", "5aSp44Gu6YGT44KS5b6A44GP77yB", "5pyJ5ZCN5Y6f44Go44Gq44KL77yB", "44K044Of44Gu44KI44GG44Gg77yB", "5LuK44GZ44GQ6aOf44GI77yB"],
 
-    let posX = 50, posY = 50;
-    let velX = 6, velY = 7;
-    let scale = 1.0;
-    let scaleGrowing = true;
+      // 未熟用パーツ
+      U_A: ["5oim6ZeY5Yqb44CA44Gf44Gj44Gf44GuNeOBi+KApuOCtOODn+OCgQ==", "44GK5YmN44Gu44KI44GG44Gq6Z2S44OQ44OK44OK44Gv44CB", "6YCA44Gs44GZX77yB5aqa44Gz44GZX77yB", "54Sh6aeE54Sh6aeE54Sh6aeE44OD77yB", "44OR44K/44O844Oz6Z2S44CB", "44GC44KT44Gf44OQ44Kr44Kh77yf", "44GT44KT44Gq5ZGz44Gu5pmC44CB", "5a6J6KW/5YWI55Sf44CB", "44Oq44Custom44Km44Oz44OJ44KS5Yi244GZ44Kq44O844Gv44CB", "6LK05qeY44CB", "44OA44Oh44Gg44CB", "5bm+5ben44Gj44Gm5aW044Gu5LuV5qWt44Gn44CB"],
+      U_B: ["56Gs44GZ44GO44Gm77yh77yULuODleOCo+ODvOODq+ODieOCkueVs+WSjOOBl+OBjeOBmu44CB", "5riL44G/44GM5ZC444KP44KM44CB", "6Ieq5YiG6Ieq6Lqr44Gu6Iul44GV44KG44GI44Gr6L+344KK44CB", "6aOf44GI44KL44KP44GR44Gq44GE44GY44KD44Gq44GP44CB", "5LiJ5LqV44Gu44KI44GG44Gr5p6h44KM44CB", "5byx6ICF44Gu44G+44G+44Gn44CB", "5b6M5q6144G444GZ44KK44CB", "6Z2S5rGB44Gu5ZGz44GM44GX44Gm44CB"],
+      U_C: ["6L+954af57WC5LqG44Gn44GZ44CC", "44Kp44K344GK44GN44KI77yB", "44Gp44KT44Gq6aZT44KS44GZ44KM44Gw44GE44GE44GL57W244GL44KT44CC", "5qqq44G444Gf44GP44Gq44GE77yB", "5LiJ5pel5a+d44GL44Gb77yB", "6YCA44GP44Ge77yB", "57WC44KP44KT44KI44CC", "5p2+5Lul5LiK44Gu5riL44GV44Gg77yB"],
 
-    const video = document.getElementById('video');
-    const snapCanvas = document.getElementById('snapshot');
-    const calcCanvas = document.getElementById('calc-canvas');
-    const calcCtx = calcCanvas.getContext('2d', { willReadFrequently: true });
-    const guide = document.getElementById('guide');
-    const badge = document.getElementById('badge');
-    const desc = document.getElementById('desc');
-    const mainBtn = document.getElementById('main-btn');
-    const retakeBtn = document.getElementById('retake-btn');
-    const flyingPack = document.getElementById('flying-pack');
-    const flyingScore = document.getElementById('flying-score');
-    const staticScore = document.getElementById('static-score');
-    const faceIcon = document.getElementById('face-icon');
-    const giantChart = document.getElementById('giant-chart');
-    const inlineChart = document.getElementById('inline-chart');
+      // 標準用パーツ（超大増量）
+      N_A: ["55uu5qiZ44KS44K744Oz44K/44O844Gr5YWl44KM44Gm44CB", "6Kaa5oKf44Gv44GE44GE44GL77yf", "44Kq44Os44Gr5LuK44Gn44GN44KL44GT44Go44Gv44CB", "5pat44GT44Gf44KL5rG65Y2Y44Gn44CB", "5rWB44KM44Gv6Ieq5YiG44Gf44Gh44Gn5oyB44Gj44Gm44GP44KL44CA", "6JC944Gh44Gk44GR44CB", "44GT44GT44Gn44GK5YmN44GM6aOf44KP44Gq44GN44KD44CB", "5pmu6YCa44Gu44OQ44OK44OK44Gg44GM44CB", "5LqL5Lu244Gv44CB", "5b6A44GN44Gv44CB", "55qu44KS44KA44GE44Gf44KJ44CB", "5rG644G+44Gj44Gf44CB"],
+      N_B: ["5rex5ZG85ZC444GX44Gm44CB", "44K544Kk44OD44OB44KS5oq844GX44CB", "5biM5pyb44KS5o2o44Gm44Ga44CB", "44OQ44OK44OK44K544K/44Oz44OJ44GL44KJ44CB", "5pmu6YCa44Gr6aOf44G544KL44Gf44KB44Gr44CB", "5q2j6KaP44Gu6aOf44G56aCD44Gn44CB", "44Op44Kk44OV44K544K/44Kk44Or44KS5Y+X44GR5YWl44KM44CB", "6Kmw44GM6aOf44GP44KT44Gg44CB", "44OT44Op44OB44OG44Kj44Gu576p5b6h44Gr44CB"],
+      N_C: ["55qu44KS44KA44GP44CC", "44Gd44KM44GM44GE44GE44CC", "6aOf44G544KL44Go5oCd44GI44CC", "44Kq44Os44Gv44Gn44GN44Gm44KL77yB", "5LiA5Y+j6aOf44G544Gm44G/44KN44Gf44G+44GI44CC", "5q2j6KaP44Gu5ZGz44Gg77yB", "5qih56+E55qE44Gq5ZGz44Gg44CC", "44GL44GI44Gk44GK44Gt44GN44KM44Gf77yB"]
+    };
 
-    // ページ起動時に「ばーーーーん！➔ しゅーーーっ」
-    window.addEventListener('DOMContentLoaded', () => {
-      triggerGiantChart();
-    });
-
-    function triggerGiantChart() {
-      giantChart.className = 'giant-chart-overlay show-bam';
-      setTimeout(() => {
-        giantChart.className = 'giant-chart-overlay fade-shuuu';
-      }, 1600);
+    function decodeArr(arr) {
+      return arr.map(str => decodeURIComponent(escape(atob(str))));
     }
+
+    const POOL = {
+      R_A: decodeArr(_SLOTS.R_A), R_B: decodeArr(_SLOTS.R_B), R_C: decodeArr(_SLOTS.R_C),
+      U_A: decodeArr(_SLOTS.U_A), U_B: decodeArr(_SLOTS.U_B), U_C: decodeArr(_SLOTS.U_C),
+      N_A: decodeArr(_SLOTS.N_A), N_B: decodeArr(_SLOTS.N_B), N_C: decodeArr(_SLOTS.N_C)
+    };
+
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+    // 無限スロット生成エンジン
+    function generateInfiniteLine(type) {
+      if (type === 'ripe') return pick(POOL.R_A) + pick(POOL.R_B) + pick(POOL.R_C);
+      if (type === 'unripe') return pick(POOL.U_A) + pick(POOL.U_B) + pick(POOL.U_C);
+      return pick(POOL.N_A) + pick(POOL.N_B) + pick(POOL.N_C);
+    }
+
+    let model = null;
+    let video = document.getElementById('video');
+    let overlay = document.getElementById('scouter-overlay');
+    let ctx = overlay.getContext('2d');
+    let banner = document.getElementById('hud-banner');
+    let cropCanvas = document.getElementById('crop-canvas');
+    let cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+    let isRunning = false;
+    let audioCtx = null;
+    let lastSpokenTime = 0;
 
     function playBeep(freq, type, duration) {
       try {
@@ -344,7 +167,7 @@
         const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -353,31 +176,40 @@
       } catch(e) {}
     }
 
-    function speakCute(spokenScore, text) {
+    function speakScouter(text) {
       if (!('speechSynthesis' in window)) return;
+      const now = Date.now();
+      if (now - lastSpokenTime < 4200) return;
+      lastSpokenTime = now;
+
       window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[！〜♡✨]/g, '、');
-      const uttr = new SpeechSynthesisUtterance(`${spokenScore}。 ${cleanText}`);
+      const cleanText = text.replace(/[（）()！!]/g, '、');
+      const uttr = new SpeechSynthesisUtterance(cleanText);
       uttr.lang = 'ja-JP';
       uttr.rate = 1.25;
-      uttr.pitch = 1.6;
+      uttr.pitch = 1.05;
       window.speechSynthesis.speak(uttr);
     }
 
-    async function handleAction() {
-      if (!stream) {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" } },
-            audio: false
-          });
-          video.srcObject = stream;
-          mainBtn.innerText = '🔍 きゃわわスキャン！';
-        } catch (e) {
-          alert('カメラ許可エラーだよ: ' + e.message);
-        }
-      } else {
-        runAnalysis();
+    async function initScouter() {
+      const btn = document.getElementById('start-btn');
+      btn.style.display = 'none';
+      banner.innerText = '🧠 無限構文解析エンジン起動中…';
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+
+        model = await cocoSsd.load();
+        banner.innerText = '🟢 TARGET SEARCHING... バナナにかざせ！';
+        isRunning = true;
+        requestAnimationFrame(renderLoop);
+      } catch (err) {
+        banner.innerText = '❌ エラー: ' + err.message;
       }
     }
 
@@ -387,9 +219,8 @@
       let h, s, v = max;
       const d = max - min;
       s = max === 0 ? 0 : d / max;
-      if (max === min) {
-        h = 0;
-      } else {
+      if (max === min) h = 0;
+      else {
         switch (max) {
           case r: h = (g - b) / d + (g < b ? 6 : 0); break;
           case g: h = (b - r) / d + 2; break;
@@ -400,153 +231,92 @@
       return [h * 360, s * 100, v * 100];
     }
 
-    function runAnalysis() {
-      snapCanvas.width = video.videoWidth;
-      snapCanvas.height = video.videoHeight;
-      snapCanvas.getContext('2d').drawImage(video, 0, 0);
+    async function renderLoop() {
+      if (!isRunning) return;
 
-      video.style.display = 'none';
-      snapCanvas.style.display = 'block';
-      guide.style.display = 'none';
-      mainBtn.style.display = 'none';
-      retakeBtn.style.display = 'block';
+      overlay.width = video.videoWidth;
+      overlay.height = video.videoHeight;
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-      const sx = video.videoWidth * 0.15;
-      const sy = video.videoHeight * 0.15;
-      const sw = video.videoWidth * 0.7;
-      const sh = video.videoHeight * 0.7;
-      calcCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 100, 100);
-      const data = calcCtx.getImageData(0, 0, 100, 100).data;
+      if (model && video.readyState >= 2) {
+        const predictions = await model.detect(video);
+        const bananas = predictions.filter(p => p.class === 'banana' && p.score > 0.35);
 
-      let green = 0, yellow = 0, spot = 0, skin = 0, total = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        const [h, s, v] = rgbToHsv(data[i], data[i+1], data[i+2]);
-        total++;
-        if (h >= 5 && h <= 30 && s >= 12 && s <= 45 && v >= 40) skin++;
-        else if (h >= 45 && h <= 155 && s > 18 && v > 15) green++;
-        else if (h >= 32 && h < 45 && s > 30 && v > 35) yellow++;
-        else if (h >= 10 && h < 32 && s > 45 && v >= 15 && v <= 35) spot++;
+        if (bananas.length > 0) {
+          playBeep(920 + Math.random() * 300, 'square', 0.025);
+
+          let maxPower = 0;
+          let bestLine = '';
+
+          bananas.forEach(b => {
+            const [x, y, w, h] = b.bbox;
+            cropCtx.drawImage(video, x, y, w, h, 0, 0, 40, 40);
+            const imgData = cropCtx.getImageData(0, 0, 40, 40).data;
+
+            let green = 0, spot = 0, yellow = 0, total = 0;
+            for (let i = 0; i < imgData.length; i += 4) {
+              const [hv, s, v] = rgbToHsv(imgData[i], imgData[i+1], imgData[i+2]);
+              total++;
+              if (hv >= 45 && hv <= 155 && s > 18) green++;
+              else if (hv >= 10 && hv < 32 && s > 40 && v < 35) spot++;
+              else yellow++;
+            }
+
+            const gRatio = green / total;
+            const sRatio = spot / total;
+
+            let power = 15000;
+            let status = '普通';
+            let line = generateInfiniteLine('normal');
+
+            if (gRatio > 0.25) {
+              power = Math.floor(5 + Math.random() * 45);
+              status = '使徒・ゴミめ（未熟）';
+              line = generateInfiniteLine('unripe');
+            } else if (sRatio > 0.15) {
+              power = 530000;
+              status = '覇権・完熟神！';
+              line = generateInfiniteLine('ripe');
+            }
+
+            if (power > maxPower) {
+              maxPower = power;
+              bestLine = line;
+            }
+
+            drawScouterTarget(b.bbox, power, status, power === 530000);
+          });
+
+          banner.innerHTML = `📡 捕捉: ${bananas.length}本 | 最高POWER: ${maxPower.toLocaleString()}<br><b>💬「${bestLine}」</b>`;
+          speakScouter(bestLine);
+        } else {
+          banner.innerText = '📡 SEARCHING... スーパーのバナナ売り場に向けろ！';
+        }
       }
 
-      // 手
-      if (skin / total > 0.3) {
-        badge.innerText = '🍖 それ人間の手やろがい！';
-        desc.innerText = 'バナナの皮かぶってから出直してきてね♡';
-        faceIcon.innerText = '😡';
-        startBounce('0.0度', 'とうど、れいてんれい ど', 'それ人間の手やろがい！', null);
-        return;
-      }
-
-      const bananaPixels = green + yellow + spot || 1;
-      const gRatio = green / bananaPixels;
-      const sRatio = spot / bananaPixels;
-
-      // 公式ステージ割り当て
-      let stage = 6;
-      let scoreText = '16.5度';
-      let badgeText = '💛 Stage 6：フルイエロー';
-      let descText = '標準的な美味しさ！無難に美味しく食べられるよ♡';
-      let face = '🙂';
-
-      if (gRatio > 0.45) {
-        stage = 1; scoreText = '7.0度'; badgeText = '🟢 Stage 1：オールグリーン（極草）';
-        descText = 'ガッチガチの木片！ゴリラも窓から捨てるレベル！'; face = '🥶';
-      } else if (gRatio > 0.25) {
-        stage = 2; scoreText = '8.4度'; badgeText = '🍏 Stage 2：青バナナ（硬草）';
-        descText = '渋っっ！口の水分ぜんぶ持っていかれるやつ！'; face = '😱';
-      } else if (gRatio > 0.12) {
-        stage = 3; scoreText = '11.5度'; badgeText = '🥑 Stage 3：微熟（渋若）';
-        descText = 'まだ青臭さが残る若武者！追熟させろ！'; face = '🥺';
-      } else if (gRatio > 0.05) {
-        stage = 4; scoreText = '13.8度'; badgeText = '🍈 Stage 4：先緑';
-        descText = 'さっぱり酸味系！スムージーにおすすめ！'; face = '😋';
-      } else if (sRatio > 0.35) {
-        stage = 8; scoreText = '22.5度'; badgeText = '🟤 Stage 8：ダップル（過熟）';
-        descText = 'ドロドロ自壊寸前！今すぐバナナケーキに錬成せよ！'; face = '🥴';
-      } else if (sRatio > 0.18) {
-        stage = 7; scoreText = '21.0度'; badgeText = '🍯 Stage 7：完熟スター（蜜神）';
-        descText = '甘みの極致！シュガースポット全開の神バナナ降臨！'; face = '😍';
-      }
-
-      badge.innerText = badgeText;
-      desc.innerText = descText;
-      faceIcon.innerText = face;
-
-      // しれっと再出現＆該当ステージを光らせる
-      showInlineChart(stage);
-      startBounce(scoreText, `とうど、${scoreText.replace('度','')} ど`, badgeText + '、' + descText, stage);
+      requestAnimationFrame(renderLoop);
     }
 
-    function showInlineChart(targetStage) {
-      inlineChart.style.display = 'block';
-      for (let i = 1; i <= 8; i++) {
-        const el = document.getElementById(`st-${i}`);
-        if (el) el.classList.toggle('target-glow', i === targetStage);
-      }
-    }
+    function drawScouterTarget(bbox, power, status, isMax) {
+      const [x, y, w, h] = bbox;
+      const color = isMax ? '#FF0055' : (power < 100 ? '#00FF66' : '#FFD700');
 
-    function startBounce(displayScore, spokenScore, speechText, stage) {
-      flyingScore.innerText = displayScore;
-      flyingPack.style.display = 'block';
-      staticScore.innerText = '--';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = isMax ? 4 : 2;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = isMax ? 18 : 6;
 
-      posX = window.innerWidth / 3;
-      posY = window.innerHeight / 3;
-      velX = (Math.random() > 0.5 ? 1 : -1) * 6;
-      velY = (Math.random() > 0.5 ? 1 : -1) * 6;
+      const len = Math.min(w, h) * 0.2;
+      ctx.beginPath();
+      ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y);
+      ctx.moveTo(x + w - len, y); ctx.lineTo(x + w); ctx.lineTo(x + w, y + len);
+      ctx.moveTo(x, y + h - len); ctx.lineTo(x, y + h); ctx.lineTo(x + len, y + h);
+      ctx.moveTo(x + w - len, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - len);
+      ctx.stroke();
 
-      function step() {
-        posX += velX;
-        posY += velY;
-        if (scaleGrowing) { scale += 0.025; if (scale > 1.6) scaleGrowing = false; }
-        else { scale -= 0.025; if (scale < 0.85) scaleGrowing = true; }
-
-        const packRect = flyingPack.getBoundingClientRect();
-        if (posX <= 0 || posX + packRect.width >= window.innerWidth) velX = -velX;
-        if (posY <= 0 || posY + packRect.height >= window.innerHeight) velY = -velY;
-
-        flyingPack.style.left = posX + 'px';
-        flyingPack.style.top = posY + 'px';
-        flyingPack.style.transform = `scale(${scale}) rotate(${(posX % 50) - 25}deg)`;
-
-        bounceAnimId = requestAnimationFrame(step);
-      }
-
-      if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
-      bounceAnimId = requestAnimationFrame(step);
-
-      if (bounceTimer) clearTimeout(bounceTimer);
-      bounceTimer = setTimeout(() => {
-        cancelAnimationFrame(bounceAnimId);
-        flyingPack.style.display = 'none';
-        staticScore.innerText = displayScore;
-        staticScore.style.transform = 'scale(1.25)';
-        setTimeout(() => staticScore.style.transform = 'scale(1.0)', 250);
-
-        playBeep(659, 'sine', 0.15);
-        speakCute(spokenScore, speechText);
-      }, 2300);
-    }
-
-    function retake() {
-      if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
-      if (bounceTimer) clearTimeout(bounceTimer);
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-
-      flyingPack.style.display = 'none';
-      staticScore.innerText = '--';
-      video.style.display = 'block';
-      snapCanvas.style.display = 'none';
-      guide.style.display = 'block';
-      mainBtn.style.display = 'block';
-      retakeBtn.style.display = 'none';
-      inlineChart.style.display = 'none';
-      badge.innerText = 'バナナちゃんをうつしてね♡';
-      desc.innerText = '枠の中にバナナをドン！とおさえてボタンを押してね♡';
-      faceIcon.innerText = '🍌';
-
-      // もう一回ばーーーーん！
-      triggerGiantChart();
+      ctx.fillStyle = color;
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText(`POWER: ${power.toLocaleString()}`, x, y - 8 > 16 ? y - 8 : y + h + 18);
     }
   </script>
 </body>
