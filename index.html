@@ -3,46 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>万能スキャナー（バナナ & お好み焼き）</title>
+  <title>🍌 激辛！バナナ＆お好み焼きチェッカー 🥞</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: #0d1117;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #fff9e6 0%, #ffe4e6 100%);
+      color: #4a3b32;
+      font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", -apple-system, BlinkMacSystemFont, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 12px;
+      padding: 16px;
       min-height: 100vh;
     }
-    h1 { font-size: 1.2rem; margin: 8px 0; text-align: center; }
-    
+    h1 {
+      font-size: 1.25rem;
+      margin: 6px 0 12px;
+      color: #ff5e7e;
+      text-shadow: 1px 1px 0 #fff;
+    }
+
     /* モード切替タブ */
     .mode-selector {
       display: flex;
-      background: #161b22;
-      border-radius: 12px;
+      background: #fff;
+      border-radius: 25px;
       padding: 4px;
       margin-bottom: 12px;
       width: 100%;
       max-width: 320px;
+      box-shadow: 0 4px 10px rgba(255, 182, 193, 0.4);
     }
     .mode-btn {
       flex: 1;
-      padding: 8px;
-      font-size: 0.9rem;
-      font-weight: bold;
+      padding: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
       border: none;
       background: transparent;
-      color: #8b949e;
-      border-radius: 8px;
+      color: #a08c84;
+      border-radius: 20px;
       cursor: pointer;
+      transition: 0.2s;
     }
     .mode-btn.active {
-      background: #30363d;
+      background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
       color: #fff;
+      box-shadow: 0 2px 6px rgba(255, 117, 140, 0.4);
     }
 
     .camera-wrapper {
@@ -50,10 +58,11 @@
       width: 100%;
       max-width: 320px;
       height: 320px;
-      border-radius: 16px;
+      border-radius: 24px;
       overflow: hidden;
-      background: #000;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      background: #333;
+      border: 4px solid #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
     video, canvas#snapshot {
       width: 100%;
@@ -66,47 +75,58 @@
       left: 15%;
       width: 70%;
       height: 70%;
-      border: 2px dashed #e3b341;
-      border-radius: 12px;
+      border: 3px dashed #ffb830;
+      border-radius: 18px;
       pointer-events: none;
+      box-shadow: inset 0 0 10px rgba(255, 184, 48, 0.4);
     }
 
     .card {
       width: 100%;
       max-width: 320px;
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 16px;
+      background: #ffffff;
+      border-radius: 20px;
       padding: 16px;
       margin-top: 12px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.05);
+      border: 2px solid #fff0f5;
     }
     .score-row {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+    }
+    .score-label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #8c7a70;
     }
     .main-score {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: #f2cc60;
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: #ff5e7e;
+      font-feature-settings: "palt";
     }
     .badge {
       display: inline-block;
-      padding: 4px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
       font-size: 0.85rem;
-      font-weight: bold;
+      font-weight: 800;
       margin-bottom: 10px;
-      background: #21262d;
+      background: #ffe3e8;
+      color: #d81b60;
     }
     .desc {
-      font-size: 0.85rem;
-      color: #c9d1d9;
+      font-size: 0.88rem;
+      color: #4a3b32;
       line-height: 1.5;
-      background: #0d1117;
-      padding: 10px;
-      border-radius: 8px;
+      background: #fff8f0;
+      padding: 12px;
+      border-radius: 14px;
+      border-left: 4px solid #ffb830;
+      font-weight: 600;
     }
 
     .btn-group {
@@ -118,18 +138,31 @@
     }
     .action-btn {
       flex: 1;
-      padding: 12px;
-      font-size: 1rem;
-      font-weight: bold;
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 900;
       border: none;
-      border-radius: 10px;
+      border-radius: 16px;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: 0.1s transform;
     }
-    .btn-scan { background: #238636; color: #fff; }
-    .btn-retake { background: #30363d; color: #fff; display: none; }
+    .action-btn:active { transform: scale(0.97); }
+    .btn-scan {
+      background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+      color: #fff;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+    }
+    .btn-retake {
+      background: #e2e8f0;
+      color: #4a5568;
+      display: none;
+    }
   </style>
 </head>
 <body>
+
+  <h1>🍌 万能スキャナー 🥞</h1>
 
   <div class="mode-selector">
     <button id="btn-mode-banana" class="mode-btn active" onclick="switchMode('banana')">🍌 バナナ</button>
@@ -146,16 +179,16 @@
 
   <div class="card">
     <div class="score-row">
-      <span id="score-label">推定糖度</span>
+      <span class="score-label" id="score-label">推定糖度</span>
       <span class="main-score" id="score-val">--</span>
     </div>
-    <div id="badge" class="badge">カメラを起動してください</div>
-    <div id="desc" class="desc">枠内に対象を収めてスキャンボタンを押してください。</div>
+    <div id="badge" class="badge">カメラを起動してね✨</div>
+    <div id="desc" class="desc">枠の中に測定したい獲物をドン！と収めてスキャンを押すのじゃ！</div>
   </div>
 
   <div class="btn-group">
-    <button id="main-btn" class="action-btn btn-scan" onclick="handleAction()">カメラを起動</button>
-    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">再スキャン</button>
+    <button id="main-btn" class="action-btn btn-scan" onclick="handleAction()">📸 カメラを起動する！</button>
+    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">🔄 もう一回スキャン！</button>
   </div>
 
   <script>
@@ -177,14 +210,7 @@
       currentMode = mode;
       document.getElementById('btn-mode-banana').classList.toggle('active', mode === 'banana');
       document.getElementById('btn-mode-okonomi').classList.toggle('active', mode === 'okonomi');
-      
-      if (mode === 'banana') {
-        scoreLabel.innerText = '推定糖度';
-        scoreVal.innerHTML = '-- <small style="font-size:1rem;">度</small>';
-      } else {
-        scoreLabel.innerText = '焼き加減スコア';
-        scoreVal.innerHTML = '-- <small style="font-size:1rem;">点</small>';
-      }
+      scoreLabel.innerText = (mode === 'banana') ? '推定糖度' : '焼き加減スコア';
       retake();
     }
 
@@ -196,9 +222,9 @@
             audio: false
           });
           video.srcObject = stream;
-          mainBtn.innerText = '📸 スキャン判定';
+          mainBtn.innerText = '🔍 激辛スキャン開始！';
         } catch (e) {
-          alert('カメラ許可エラー: ' + e.message);
+          alert('カメラが見つからないよ〜: ' + e.message);
         }
       } else {
         runAnalysis();
@@ -250,57 +276,90 @@
     }
 
     function analyzeBanana(data) {
-      let g = 0, y = 0, b = 0, total = 0;
+      let green = 0, yellow = 0, spot = 0, skin = 0, total = 0;
+
       for (let i = 0; i < data.length; i += 4) {
         const [h, s, v] = rgbToHsv(data[i], data[i+1], data[i+2]);
-        // 肌色誤爆を防ぐため彩度・明度判定を調整
-        if (s > 25 && v > 20) {
-          if (h >= 65 && h <= 150) { g++; total++; }
-          else if (h >= 35 && h < 65 && v > 40) { y++; total++; }
-          else if ((h >= 10 && h < 35 && v < 60) || (h < 50 && v < 25)) { b++; total++; }
+        total++;
+
+        // 肌色フィルター（低彩度かつ特定の色相）
+        if (h >= 5 && h <= 30 && s >= 15 && s <= 48 && v >= 40) {
+          skin++;
+        }
+        // 緑バナナ（広めに検知）
+        else if (h >= 55 && h <= 150 && s > 25 && v > 20) {
+          green++;
+        }
+        // 黄色バナナ
+        else if (h >= 35 && h < 55 && s > 35 && v > 35) {
+          yellow++;
+        }
+        // ガチのシュガースポット（濃い黒茶）
+        else if ((h >= 10 && h < 35 && s > 50 && v < 40) || (v < 20)) {
+          spot++;
         }
       }
 
-      if (total < 100) {
-        badge.innerText = '⚠️ 検出失敗';
-        badge.style.background = '#da3633';
-        desc.innerText = 'バナナが認識できませんでした。枠内に大きく収めてください。';
+      // 手が画面の35%以上を占めている場合
+      if (skin / total > 0.35) {
+        scoreVal.innerHTML = `0.0 <small style="font-size:1.1rem;">度</small>`;
+        badge.innerText = '🍖 それ人間の手やろがい！';
+        badge.style.background = '#ffd1d1';
+        badge.style.color = '#d32f2f';
+        desc.innerText = 'どこからどう見ても手です。バナナの皮かぶってから出直してきな？';
         return;
       }
 
-      const gRatio = g / total;
-      const bRatio = b / total;
-      const yRatio = y / total;
+      const bananaPixels = green + yellow + spot;
+      if (bananaPixels / total < 0.15) {
+        scoreVal.innerHTML = `--`;
+        badge.innerText = '👻 バナナ不在警報';
+        badge.style.background = '#e2e8f0';
+        badge.style.color = '#4a5568';
+        desc.innerText = '虚無をスキャンするな！ちゃんと枠内にバナナを突き出してくれ！';
+        return;
+      }
 
-      if (gRatio > 0.3) {
-        scoreVal.innerHTML = `${(12.0 + (1 - gRatio)*3).toFixed(1)} <small style="font-size:1rem;">度</small>`;
-        badge.innerText = '🟢 未熟（酸味・食物繊維）';
-        badge.style.background = '#238636';
-        desc.innerText = 'レジスタントスターチが豊富で整腸に最適。甘さはまだ控えめです。';
-      } else if (bRatio > 0.2) {
-        scoreVal.innerHTML = `${(19.0 + Math.min(bRatio, 0.4)*5).toFixed(1)} <small style="font-size:1rem;">度</small>`;
-        badge.innerText = '🟤 完熟（シュガースポット）';
-        badge.style.background = '#bd561d';
-        desc.innerText = '甘さMAX！免疫活性効果が高く、消化吸収が非常に速い状態です。';
+      const gRatio = green / bananaPixels;
+      const sRatio = spot / bananaPixels;
+      const yRatio = yellow / bananaPixels;
+
+      if (gRatio > 0.25) {
+        const brix = (8.0 + (1 - gRatio) * 4).toFixed(1);
+        scoreVal.innerHTML = `${brix} <small style="font-size:1.1rem;">度</small>`;
+        badge.innerText = '🤮 渋っっ！ガッチガチの草！';
+        badge.style.background = '#d4edda';
+        badge.style.color = '#155724';
+        desc.innerText = 'エグ味の暴力！一口かじったら口の中の水分全部持ってかれるぞ。ゴリラでも窓から投げ捨てるレベル。3日寝かせろ！';
+      } else if (sRatio > 0.2) {
+        const brix = (20.5 + Math.min(sRatio, 0.5) * 4).toFixed(1);
+        scoreVal.innerHTML = `${brix} <small style="font-size:1.1rem;">度</small>`;
+        badge.innerText = '🍯 蜜の極み！脳が溶ける甘さ！';
+        badge.style.background = '#ffeeba';
+        badge.style.color = '#856404';
+        desc.innerText = '甘さ限界突破！もはや果物というより液体シロップ。今すぐ胃袋に叩き込まないと自壊するぞ急げ！！';
       } else {
-        scoreVal.innerHTML = `${(16.0 + yRatio*2).toFixed(1)} <small style="font-size:1rem;">度</small>`;
-        badge.innerText = '🟡 食べ頃ベスト！';
-        badge.style.background = '#9e6a03';
-        desc.innerText = '甘みと酸味のバランスが最高。そのまま食べるのに一番適した状態です。';
+        const brix = (14.5 + yRatio * 2.5).toFixed(1);
+        scoreVal.innerHTML = `${brix} <small style="font-size:1.1rem;">度</small>`;
+        badge.innerText = '🍌 普通。実に凡庸なバナナ。';
+        badge.style.background = '#fff3cd';
+        badge.style.color = '#856404';
+        desc.innerText = '教科書に載るレベルの無難な味。可もなく不可もなく、コメントに困る一番リアクションしづらい状態です。';
       }
     }
 
     function analyzeOkonomi(data) {
       let raw = 0, perfect = 0, burnt = 0, total = 0;
+
       for (let i = 0; i < data.length; i += 4) {
         const [h, s, v] = rgbToHsv(data[i], data[i+1], data[i+2]);
         total++;
-        if (v < 20) {
-          burnt++; // 焦げ（極度の低明度）
-        } else if (h >= 15 && h <= 45 && s >= 30 && v >= 25) {
-          perfect++; // こんがりきつね色（茶・黄金色）
-        } else if (v > 60 && s < 30) {
-          raw++; // 白っぽい生地（生焼け）
+        if (v < 22) {
+          burnt++;
+        } else if (h >= 15 && h <= 45 && s >= 35 && v >= 30) {
+          perfect++;
+        } else if (v > 55 && s < 25) {
+          raw++;
         }
       }
 
@@ -308,21 +367,24 @@
       const perfRatio = perfect / total;
       const rawRatio = raw / total;
 
-      if (burntRatio > 0.25) {
-        scoreVal.innerHTML = `40 <small style="font-size:1rem;">点</small>`;
-        badge.innerText = '🚨 焦げ警報発令！';
-        badge.style.background = '#da3633';
-        desc.innerText = 'コゲ部分が広がっています！今すぐ皿へ避難させるか火を弱めてください！';
-      } else if (perfRatio > 0.35) {
-        scoreVal.innerHTML = `98 <small style="font-size:1rem;">点</small>`;
-        badge.innerText = '🔥 最高のきつね色！';
-        badge.style.background = '#238636';
-        desc.innerText = '完璧な焼き加減です！ソース・マヨネーズ・青のり・かつお節を投下せよ！';
+      if (burntRatio > 0.22) {
+        scoreVal.innerHTML = `9 <small style="font-size:1.1rem;">点</small>`;
+        badge.innerText = '🚨 炭化警報！即死案件！';
+        badge.style.background = '#343a40';
+        badge.style.color = '#ff6b6b';
+        desc.innerText = '炭素を錬成してどうすんねん！苦味の爆弾完成！鉄板から今すぐスクラップ回収しろ！';
+      } else if (perfRatio > 0.3) {
+        scoreVal.innerHTML = `100 <small style="font-size:1.1rem;">点</small>`;
+        badge.innerText = '🔥 神の焼き加減！優勝！';
+        badge.style.background = '#d4edda';
+        badge.style.color = '#155724';
+        desc.innerText = 'カリッふわの黄金比率！迷わずソースの海に沈めてマヨネーズをぶっかけろ！！箸が止まらんぞ！';
       } else {
-        scoreVal.innerHTML = `60 <small style="font-size:1rem;">点</small>`;
-        badge.innerText = '⏳ まだ生焼け（待機）';
-        badge.style.background = '#8957e5';
-        desc.innerText = 'まだ生地が白っぽいです。ひっくり返さずにもう少しじっくり焼きましょう。';
+        scoreVal.innerHTML = `23 <small style="font-size:1.1rem;">点</small>`;
+        badge.innerText = '💧 生焼け！もんじゃかよ！';
+        badge.style.background = '#e2e3e5';
+        badge.style.color = '#383d41';
+        desc.innerText = 'まだ生地がドロドロの粉もん地獄！今ひっくり返したら大惨事確定！触るな！待て！';
       }
     }
 
@@ -332,10 +394,11 @@
       guide.style.display = 'block';
       mainBtn.style.display = 'block';
       retakeBtn.style.display = 'none';
-      badge.innerText = '枠内に収めて撮影';
-      badge.style.background = '#21262d';
+      badge.innerText = 'カメラを起動してね✨';
+      badge.style.background = '#ffe3e8';
+      badge.style.color = '#d81b60';
       scoreVal.innerHTML = '--';
-      desc.innerText = '枠内に対象を収めてスキャンボタンを押してください。';
+      desc.innerText = '枠の中に測定したい獲物をドン！と収めてスキャンを押すのじゃ！';
     }
   </script>
 </body>
