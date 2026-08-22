@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍌 激辛AIバナナ＆お好み焼きスキャナー 🥞</title>
+  <title>🍌 喋る！激辛AIスキャナー 🥞</title>
   <!-- TensorFlow.js & MobileNet CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
@@ -59,7 +59,7 @@
       position: relative;
       width: 100%;
       max-width: 320px;
-      height: 300px;
+      height: 290px;
       border-radius: 20px;
       overflow: hidden;
       background: #222;
@@ -92,12 +92,12 @@
       margin-top: 10px;
       box-shadow: 0 6px 15px rgba(0,0,0,0.05);
       border: 2px solid #fff0f5;
-      min-height: 130px;
     }
     .score-row {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
+      min-height: 48px;
     }
     .score-label {
       font-size: 0.85rem;
@@ -105,17 +105,25 @@
       color: #8c7a70;
     }
     
-    /* 暴れ回る巨大スコア */
+    /* 画面内を飛び回るスコア */
     .bouncing-score {
       position: fixed;
-      font-size: 3.5rem;
+      font-size: 3.8rem;
       font-weight: 900;
       color: #ff1e56;
-      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 0 8px 20px rgba(255, 30, 86, 0.5);
+      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 0 8px 25px rgba(255, 30, 86, 0.6);
       pointer-events: none;
       z-index: 9999;
       display: none;
       white-space: nowrap;
+    }
+
+    /* 定位置に戻ったときの特大スコア */
+    .settled-score {
+      font-size: 2.6rem;
+      font-weight: 900;
+      color: #ff1e56;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .badge {
@@ -129,7 +137,7 @@
       color: #d81b60;
     }
     .desc {
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       color: #4a3b32;
       line-height: 1.45;
       background: #fff8f0;
@@ -174,7 +182,7 @@
 </head>
 <body>
 
-  <h1>🍌 激辛AIスキャナー 🥞</h1>
+  <h1>🍌 喋る！激辛スキャナー 🥞</h1>
 
   <div class="mode-selector">
     <button id="btn-mode-banana" class="mode-btn active" onclick="switchMode('banana')">🍌 バナナ</button>
@@ -187,15 +195,15 @@
     <div id="guide" class="guide-frame"></div>
   </div>
 
-  <!-- 画面中を跳ね回る点数 -->
+  <!-- 飛び回るスコア -->
   <div id="flying-score" class="bouncing-score">0.0度</div>
 
   <canvas id="calc-canvas" width="100" height="100" style="display:none;"></canvas>
 
   <div class="card">
     <div class="score-row">
-      <span class="score-label" id="score-label">AI認識ステータス</span>
-      <span id="static-score" style="font-weight:900; color:#ff5e7e;">--</span>
+      <span class="score-label" id="score-label">推定スコア</span>
+      <span id="static-score" class="settled-score">--</span>
     </div>
     <div id="badge" class="badge">AIモデル読み込み中...</div>
     <div id="desc" class="desc">枠内にターゲットを収めてスキャンを押してね！</div>
@@ -204,7 +212,7 @@
 
   <div class="btn-group">
     <button id="main-btn" class="action-btn btn-scan" onclick="handleAction()">📸 カメラを起動！</button>
-    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">🔄 落ち着いて再スキャン</button>
+    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">🔄 もう一回スキャン</button>
   </div>
 
   <script>
@@ -212,10 +220,10 @@
     let stream = null;
     let net = null;
     let bounceAnimId = null;
+    let bounceTimer = null;
 
-    // ピンボール物理エンジン変数
     let posX = 50, posY = 50;
-    let velX = 4, velY = 5;
+    let velX = 5, velY = 6;
     let scale = 1.0;
     let scaleGrowing = true;
 
@@ -232,13 +240,61 @@
     const flyingScore = document.getElementById('flying-score');
     const staticScore = document.getElementById('static-score');
 
-    // MobileNetモデルのバックグラウンド先行ロード
+    // 煽りセリフのランダムAI辞書
+    const DICTIONARY = {
+      human: [
+        { badge: '🍖 それ人間の手やろがい！', desc: '手や指を差し出すな！AIも「それ人間の一部です」って呆れてるぞ！' },
+        { badge: '🖐️ 人肉スキャン禁止！', desc: 'バナナの皮かぶってから出直してきな？毛穴しか見えんわ！' },
+        { badge: '🤦 誰の手やねん！', desc: '糖度なんかあるわけないやろ！今すぐハンドクリーム塗って寝ろ！' }
+      ],
+      banana_unripe: [
+        { badge: '🤮 渋っっ！ガッチガチの草！', desc: '青汁より渋い！噛んだ瞬間「キュッ」って鳴る硬さ。今食ったら腹壊すぞ！' },
+        { badge: '🪵 木片かじってんの？', desc: 'エグ味の極弾！ゴリラも窓から投げ捨てるレベル。3日寝かせろ！' },
+        { badge: '🥦 ほぼブロッコリー！', desc: '果物名乗るな！ただの繊維の塊！食後ずっと舌がザラつくやつ！' }
+      ],
+      banana_ripe: [
+        { badge: '🍯 蜜の極み！自壊寸前！', desc: '糖度爆発！甘党歓喜のドロ甘状態！今すぐ胃袋にシュートしろ！！' },
+        { badge: '🔥 完熟神降臨！', desc: 'シュガースポット全開！もはや飲む液体スイーツ！今日中に食え！' }
+      ],
+      banana_normal: [
+        { badge: '🍌 普通のバナナ。', desc: 'THE・標準。可もなく不可もない、スーパーのチラシ通りの無難な味。' },
+        { badge: '😐 コメントに困る味', desc: '一番リアクションしづらい優等生。普通に食べなさい。' }
+      ],
+      okonomi_burnt: [
+        { badge: '🚨 炭化警報！即死案件！', desc: '炭素錬成完了！鉄板の焦げ付き削り取ってどうすんねん！救出せよ！' },
+        { badge: '🪨 まるで炭鉱の石！', desc: '苦味のダイナマイト！ガリガリ言って顎外れるぞ！' }
+      ],
+      okonomi_perfect: [
+        { badge: '🔥 神の焼き加減！優勝！', desc: 'カリッふわの黄金比率！マヨビームと青のり投下して今すぐ食え！！' },
+        { badge: '🏆 鉄板の魔術師！', desc: '外サク中フワの極致！ビール持ってこい！優勝決定！' }
+      ],
+      okonomi_raw: [
+        { badge: '💧 生焼け！もんじゃかよ！', desc: '中身ドロッドロ！今ひっくり返したら鉄板が大惨事になるぞ！触るな！' },
+        { badge: '⏳ 焦るな！まだ粉！', desc: 'まだ小麦粉ジュースやぞ！じっくりフタして待たんかい！' }
+      ]
+    };
+
+    function pickRandom(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    // 音声読み上げ
+    function speak(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const uttr = new SpeechSynthesisUtterance(text);
+      uttr.lang = 'ja-JP';
+      uttr.rate = 1.15; // やや早口で小気味よく
+      uttr.pitch = 1.2; // 少しテンション高め
+      window.speechSynthesis.speak(uttr);
+    }
+
     async function loadAI() {
       try {
         net = await mobilenet.load();
         badge.innerText = 'AI準備完了！カメラをつけてね✨';
       } catch (e) {
-        badge.innerText = 'AIロード失敗（通常モードで動作）';
+        badge.innerText = 'AIロード失敗（通常モード動作）';
       }
     }
     loadAI();
@@ -258,7 +314,7 @@
             audio: false
           });
           video.srcObject = stream;
-          mainBtn.innerText = '🔍 激辛AIスキャン！';
+          mainBtn.innerText = '🔍 激辛スキャン開始！';
         } catch (e) {
           alert('カメラ許可エラー: ' + e.message);
         }
@@ -299,23 +355,17 @@
 
       badge.innerText = '🧠 AI思考中...';
 
-      // 1. MobileNetによる物体認識
       let isBanana = false;
-      let topClass = '不明';
       if (net) {
         try {
           const predictions = await net.classify(snapCanvas);
           if (predictions && predictions.length > 0) {
-            topClass = predictions[0].className;
-            aiTag.innerText = `🤖 AI判定物体: ${topClass} (${(predictions[0].probability * 100).toFixed(1)}%)`;
+            aiTag.innerText = `🤖 AI判定: ${predictions[0].className} (${(predictions[0].probability * 100).toFixed(1)}%)`;
             isBanana = predictions.some(p => p.className.toLowerCase().includes('banana'));
           }
-        } catch (err) {
-          console.error(err);
-        }
+        } catch (err) {}
       }
 
-      // 2. 色解析
       const sx = video.videoWidth * 0.15;
       const sy = video.videoHeight * 0.15;
       const sw = video.videoWidth * 0.7;
@@ -330,27 +380,26 @@
       }
     }
 
-    function startScoreBounce(scoreText) {
+    // 飛び回った後、本来の位置へ戻るアニメーション
+    function startScoreBounce(scoreText, speechText) {
       flyingScore.innerText = scoreText;
       flyingScore.style.display = 'block';
-      staticScore.innerText = scoreText;
+      staticScore.innerText = '--';
 
-      posX = window.innerWidth / 4;
-      posY = window.innerHeight / 4;
-      velX = (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 3);
-      velY = (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 3);
-      scale = 1.0;
+      posX = window.innerWidth / 3;
+      posY = window.innerHeight / 3;
+      velX = (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 3);
+      velY = (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 3);
 
       function step() {
         posX += velX;
         posY += velY;
 
-        // 拡大縮小の脈動
         if (scaleGrowing) {
-          scale += 0.015;
-          if (scale > 1.8) scaleGrowing = false;
+          scale += 0.02;
+          if (scale > 1.6) scaleGrowing = false;
         } else {
-          scale -= 0.015;
+          scale -= 0.02;
           if (scale < 0.9) scaleGrowing = true;
         }
 
@@ -370,8 +419,22 @@
 
         bounceAnimId = requestAnimationFrame(step);
       }
+
       if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
       bounceAnimId = requestAnimationFrame(step);
+
+      // 2.5秒間飛び回ったら元の場所に着地
+      if (bounceTimer) clearTimeout(bounceTimer);
+      bounceTimer = setTimeout(() => {
+        cancelAnimationFrame(bounceAnimId);
+        flyingScore.style.display = 'none';
+        staticScore.innerText = scoreText;
+        staticScore.style.transform = 'scale(1.2)';
+        setTimeout(() => staticScore.style.transform = 'scale(1.0)', 300);
+
+        // 喋る！
+        speak(`${scoreText}！ ${speechText}`);
+      }, 2500);
     }
 
     function analyzeBanana(data, isBananaByAI) {
@@ -380,32 +443,19 @@
       for (let i = 0; i < data.length; i += 4) {
         const [h, s, v] = rgbToHsv(data[i], data[i+1], data[i+2]);
         total++;
-
-        // 肌色
-        if (h >= 5 && h <= 30 && s >= 12 && s <= 45 && v >= 40) {
-          skin++;
-        }
-        // 緑（未熟判定をかなり敏感に強化）
-        else if (h >= 45 && h <= 155 && s > 18 && v > 15) {
-          green++;
-        }
-        // 黄色
-        else if (h >= 32 && h < 45 && s > 30 && v > 35) {
-          yellow++;
-        }
-        // 真のシュガースポット（低明度・特定彩度のみ）
-        else if (h >= 10 && h < 32 && s > 45 && v >= 15 && v <= 35) {
-          spot++;
-        }
+        if (h >= 5 && h <= 30 && s >= 12 && s <= 45 && v >= 40) skin++;
+        else if (h >= 45 && h <= 155 && s > 18 && v > 15) green++;
+        else if (h >= 32 && h < 45 && s > 30 && v > 35) yellow++;
+        else if (h >= 10 && h < 32 && s > 45 && v >= 15 && v <= 35) spot++;
       }
 
-      // 手判定
       if (!isBananaByAI && skin / total > 0.3) {
-        startScoreBounce('0.0度');
-        badge.innerText = '🍖 それ人間の手やろがい！';
+        const res = pickRandom(DICTIONARY.human);
+        badge.innerText = res.badge;
         badge.style.background = '#ffd1d1';
         badge.style.color = '#d32f2f';
-        desc.innerText = '手や指を差し出すな！AIも「それ人間の一部です」って呆れてるぞ！';
+        desc.innerText = res.desc;
+        startScoreBounce('0.0度', res.badge + ' ' + res.desc);
         return;
       }
 
@@ -413,28 +463,30 @@
       const gRatio = green / (bananaPixels || 1);
       const sRatio = spot / (bananaPixels || 1);
 
-      // 緑が10%でもあったら即座に草判定
       if (gRatio > 0.10) {
-        const brix = (7.5 + (1 - gRatio) * 3).toFixed(1) + '度';
-        startScoreBounce(brix);
-        badge.innerText = '🤮 渋っっ！ガッチガチの草！';
+        const brix = (7.0 + (1 - gRatio) * 3).toFixed(1) + '度';
+        const res = pickRandom(DICTIONARY.banana_unripe);
+        badge.innerText = res.badge;
         badge.style.background = '#d4edda';
         badge.style.color = '#155724';
-        desc.innerText = '青汁より渋い！噛んだ瞬間「キュッ」って鳴る硬さ。今食ったら腹壊すぞ！棚に放置しろ！';
+        desc.innerText = res.desc;
+        startScoreBounce(brix, res.badge + ' ' + res.desc);
       } else if (sRatio > 0.25) {
         const brix = (21.0 + Math.min(sRatio, 0.4) * 4).toFixed(1) + '度';
-        startScoreBounce(brix);
-        badge.innerText = '🍯 蜜の極み！自壊寸前！';
+        const res = pickRandom(DICTIONARY.banana_ripe);
+        badge.innerText = res.badge;
         badge.style.background = '#ffeeba';
         badge.style.color = '#856404';
-        desc.innerText = '糖度爆発！甘党歓喜のドロ甘状態！今すぐ胃袋にシュートしろ！！';
+        desc.innerText = res.desc;
+        startScoreBounce(brix, res.badge + ' ' + res.desc);
       } else {
         const brix = (14.5 + Math.random() * 2).toFixed(1) + '度';
-        startScoreBounce(brix);
-        badge.innerText = '🍌 普通のバナナ。';
+        const res = pickRandom(DICTIONARY.banana_normal);
+        badge.innerText = res.badge;
         badge.style.background = '#fff3cd';
         badge.style.color = '#856404';
-        desc.innerText = 'THE・標準。可もなく不可もない、スーパーのチラシに載ってる通りの味です。';
+        desc.innerText = res.desc;
+        startScoreBounce(brix, res.badge + ' ' + res.desc);
       }
     }
 
@@ -449,28 +501,34 @@
       }
 
       if (burnt / total > 0.2) {
-        startScoreBounce('4点');
-        badge.innerText = '🚨 炭化警報！即死案件！';
+        const res = pickRandom(DICTIONARY.okonomi_burnt);
+        badge.innerText = res.badge;
         badge.style.background = '#343a40';
         badge.style.color = '#ff6b6b';
-        desc.innerText = '炭素錬成完了！鉄板の焦げ付き削り取ってどうすんねん！救出せよ！';
+        desc.innerText = res.desc;
+        startScoreBounce('4点', res.badge + ' ' + res.desc);
       } else if (perfect / total > 0.28) {
-        startScoreBounce('100点');
-        badge.innerText = '🔥 神の焼き加減！優勝！';
+        const res = pickRandom(DICTIONARY.okonomi_perfect);
+        badge.innerText = res.badge;
         badge.style.background = '#d4edda';
         badge.style.color = '#155724';
-        desc.innerText = 'カリッふわの黄金比率！マヨビームと青のり投下して今すぐ食え！！';
+        desc.innerText = res.desc;
+        startScoreBounce('100点', res.badge + ' ' + res.desc);
       } else {
-        startScoreBounce('18点');
-        badge.innerText = '💧 生焼け！もんじゃかよ！';
+        const res = pickRandom(DICTIONARY.okonomi_raw);
+        badge.innerText = res.badge;
         badge.style.background = '#e2e3e5';
         badge.style.color = '#383d41';
-        desc.innerText = '中身ドロッドロ！今ひっくり返したら鉄板が大炎上するぞ！触るな！';
+        desc.innerText = res.desc;
+        startScoreBounce('18点', res.badge + ' ' + res.desc);
       }
     }
 
     function retake() {
       if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
+      if (bounceTimer) clearTimeout(bounceTimer);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
       flyingScore.style.display = 'none';
       staticScore.innerText = '--';
       video.style.display = 'block';
