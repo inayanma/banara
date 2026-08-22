@@ -3,162 +3,647 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍌💥 無限名言バナナスカウター v53.0 💥🍌</title>
+  <title>🍌✨ きゃわわ♡激辛バナナ鑑定所 ✨🍌</title>
+  <!-- TensorFlow.js & MobileNet & COCO-SSD CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: #080c10;
-      color: #ffd700;
-      font-family: monospace, -apple-system, sans-serif;
+      background: radial-gradient(circle, #fff0f5 0%, #ffe4ec 50%, #ffd1dc 100%);
+      color: #5c3d46;
+      font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 10px;
+      padding: 12px;
       min-height: 100vh;
       overflow-x: hidden;
     }
-    h1 {
-      font-size: 1.05rem;
+
+    .header-area {
+      text-align: center;
       margin: 4px 0 8px;
-      color: #ffd700;
-      text-shadow: 0 0 10px #ff9900, 0 0 5px #ffd700;
-      letter-spacing: 2px;
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
     }
-    .scouter-view {
+    h1 {
+      font-size: 1.2rem;
+      margin: 0;
+      color: #ff4081;
+      text-shadow: 2px 2px 0 #fff;
+    }
+    .banana-face {
+      font-size: 2.2rem;
+      display: inline-block;
+      margin-top: 2px;
+      animation: bounce 1.5s infinite alternate ease-in-out;
+    }
+    @keyframes bounce {
+      0% { transform: translateY(0) rotate(-8deg); }
+      100% { transform: translateY(-6px) rotate(8deg) scale(1.1); }
+    }
+
+    .mode-bar {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 8px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: 0.78rem;
+      font-weight: 900;
+      border-radius: 14px;
+      border: 2px solid #ffccd7;
+      background: #fff;
+      color: #a37c86;
+      cursor: pointer;
+    }
+    .mode-btn.active {
+      background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .scouter-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      z-index: 6;
+      display: none;
+    }
+    .scouter-banner {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.55);
+      color: #7CFC00;
+      font-family: monospace, sans-serif;
+      font-weight: 900;
+      font-size: 0.72rem;
+      padding: 6px 8px;
+      border-radius: 10px;
+      text-align: center;
+      display: none;
+      z-index: 7;
+      letter-spacing: 1px;
+    }
+
+    .history-btn {
+      position: absolute;
+      right: 0;
+      top: 0;
+      background: #fff;
+      border: 2px solid #ffccd7;
+      border-radius: 14px;
+      font-size: 0.68rem;
+      font-weight: 900;
+      color: #d81b60;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .ranking-btn {
+      right: auto;
+      left: 0;
+      border-color: #ffe08a;
+      color: #b8860b;
+    }
+
+    .camera-wrapper {
       position: relative;
       width: 100%;
-      max-width: 360px;
-      height: 480px;
-      border-radius: 20px;
+      max-width: 320px;
+      height: 290px;
+      border-radius: 28px;
       overflow: hidden;
-      background: #000;
-      border: 3px solid #ffd700;
-      box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+      background: #222;
+      border: 5px solid #fff;
+      box-shadow: 0 8px 24px rgba(255, 105, 180, 0.25);
     }
-    video {
+    video, canvas#snapshot {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-    canvas#scouter-overlay {
+    .guide-frame {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 15%;
+      left: 15%;
+      width: 70%;
+      height: 70%;
+      border: 3px dashed #ff8dae;
+      border-radius: 20px;
       pointer-events: none;
+      box-shadow: inset 0 0 15px rgba(255, 141, 174, 0.4);
     }
-    .hud-banner {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      background: rgba(20, 15, 0, 0.88);
-      border: 1px solid #ffd700;
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 0.82rem;
-      font-weight: 900;
-      color: #ffd700;
-      text-shadow: 0 0 5px #ffd700;
-      text-align: center;
-      z-index: 5;
-      line-height: 1.4;
-      box-shadow: 0 0 10px rgba(255,215,0,0.3);
-    }
-    .hud-grid {
+
+    .gacha-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(rgba(255,215,0,0.05) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(255,215,0,0.05) 1px, transparent 1px);
-      background-size: 20px 20px;
-      pointer-events: none;
+      background: rgba(0,0,0,0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 10;
     }
-    .btn-start {
-      margin-top: 14px;
-      width: 100%;
-      max-width: 360px;
-      padding: 14px;
-      font-size: 1.1rem;
-      font-weight: 900;
-      background: linear-gradient(135deg, #ffcc00 0%, #ff3300 100%);
+    .gacha-spin {
+      font-size: 4.5rem;
+    }
+    .gacha-label {
       color: #fff;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      box-shadow: 0 0 20px rgba(255, 100, 0, 0.6);
-      letter-spacing: 2px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+      font-weight: 900;
+      margin-top: 8px;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      text-align: center;
     }
-    .btn-start:active { transform: scale(0.97); }
+
+    .bouncing-pack {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .bouncing-banana {
+      font-size: 3.8rem;
+      display: block;
+      filter: drop-shadow(0 8px 15px rgba(255, 105, 180, 0.6));
+    }
+    .bouncing-score-text {
+      font-size: 3.4rem;
+      font-weight: 900;
+      color: #ff1493;
+      text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 0 6px 20px rgba(255, 20, 147, 0.5);
+    }
+
+    .confetti-piece {
+      position: fixed;
+      top: -20px;
+      pointer-events: none;
+      z-index: 9998;
+      font-size: 1.4rem;
+      animation: confetti-fall linear forwards;
+    }
+    @keyframes confetti-fall {
+      to {
+        transform: translateY(110vh) rotate(540deg);
+        opacity: 0.2;
+      }
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 14px 16px;
+      margin-top: 10px;
+      box-shadow: 0 6px 20px rgba(255, 182, 193, 0.3);
+      border: 3px solid #fff5f7;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 50px;
+    }
+    .score-label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #a37c86;
+    }
+
+    .settled-score {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #ff2a70;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-shadow: 2px 2px 0 #ffe0e9;
+    }
+
+    .title-badge {
+      display: none;
+      text-align: center;
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #fff;
+      background: linear-gradient(135deg, #ff8dae, #ff4081);
+      padding: 6px 10px;
+      border-radius: 14px;
+      margin: 6px 0;
+      box-shadow: 0 3px 10px rgba(255, 64, 129, 0.35);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 900;
+      margin: 6px 0;
+      background: #ffe3ee;
+      color: #d81b60;
+      border: 1px solid #ffccd7;
+    }
+    .desc {
+      font-size: 0.86rem;
+      color: #5c3d46;
+      line-height: 1.5;
+      background: #fff8fa;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border-left: 5px solid #ff8dae;
+      font-weight: 700;
+    }
+
+    .taunt-bubble {
+      display: none;
+      margin-top: 8px;
+      font-size: 0.82rem;
+      background: #f3e5ff;
+      color: #6a3ea1;
+      padding: 8px 12px;
+      border-radius: 14px;
+      font-weight: 700;
+      border-left: 5px solid #b388ff;
+    }
+
+    .recipe-box {
+      font-size: 0.8rem;
+      background: #fff0d4;
+      color: #8c5b00;
+      padding: 8px 12px;
+      border-radius: 12px;
+      margin-top: 8px;
+      font-weight: 700;
+      display: none;
+      border: 1px dashed #ffa940;
+    }
+
+    .eta-box {
+      font-size: 0.8rem;
+      background: #e3f6ff;
+      color: #0b5e82;
+      padding: 8px 12px;
+      border-radius: 12px;
+      margin-top: 8px;
+      font-weight: 700;
+      display: none;
+      border: 1px dashed #74c7ec;
+    }
+
+    .breakdown-toggle {
+      display: none;
+      margin-top: 8px;
+      font-size: 0.76rem;
+      font-weight: 900;
+      color: #a37c86;
+      background: #f7eef1;
+      padding: 6px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .breakdown-panel {
+      display: none;
+      margin-top: 6px;
+      font-size: 0.74rem;
+      color: #5c3d46;
+      background: #fbfbfb;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 3px 0;
+    }
+    .bar-bg {
+      flex: 1;
+      height: 7px;
+      background: #f0e6ea;
+      border-radius: 6px;
+      margin: 0 8px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+    }
+    .breakdown-formula {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed #ddd;
+      font-size: 0.72rem;
+      color: #a37c86;
+      line-height: 1.5;
+    }
+
+    /* 🧠 AI思考ログエリア（常時表示で目立たせる） */
+    .ai-thought-box {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: #f0f4ff;
+      border: 1px solid #d0e0ff;
+      border-radius: 12px;
+      font-size: 0.74rem;
+      color: #3b5998;
+      font-weight: 600;
+      display: none;
+    }
+
+    .btn-group {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 13px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+      transition: transform 0.1s;
+    }
+    .action-btn:active { transform: scale(0.96); }
+    .btn-scan {
+      background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+      color: #fff;
+    }
+    .btn-retake {
+      background: #f0e6ea;
+      color: #6d555c;
+      display: none;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20000;
+      padding: 16px;
+    }
+    .modal-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 16px;
+      width: 100%;
+      max-width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-title {
+      font-weight: 900;
+      color: #ff4081;
+      font-size: 1rem;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-close {
+      background: #f0e6ea;
+      border: none;
+      border-radius: 10px;
+      padding: 4px 10px;
+      font-weight: 900;
+      cursor: pointer;
+      color: #6d555c;
+    }
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 4px;
+      border-bottom: 1px solid #f5eef0;
+      font-size: 0.78rem;
+    }
+    .history-item .emoji { font-size: 1.3rem; }
+    .history-item .meta { flex: 1; }
+    .history-item .score { font-weight: 900; color: #ff2a70; }
+    .rank-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 4px;
+      border-bottom: 1px solid #f5eef0;
+      font-size: 0.8rem;
+    }
+    .rank-num {
+      font-weight: 900;
+      color: #a37c86;
+      width: 26px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .rank-name {
+      flex: 1;
+      font-weight: 700;
+    }
+    .rank-score {
+      font-weight: 900;
+      color: #ff2a70;
+    }
+    .ranking-metric {
+      font-size: 0.78rem;
+      color: #b8860b;
+      background: #fff8e1;
+      border: 1px dashed #ffd54f;
+      border-radius: 10px;
+      padding: 6px 8px;
+      margin-bottom: 8px;
+      text-align: center;
+      font-weight: 900;
+    }
+    .nickname-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .nickname-row input {
+      flex: 1;
+      border: 2px solid #ffe08a;
+      border-radius: 10px;
+      padding: 6px 8px;
+      font-size: 0.78rem;
+    }
+    .nickname-row button {
+      background: #ffca28;
+      border: none;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-weight: 900;
+      cursor: pointer;
+      color: #5c3d46;
+    }
+    .history-empty {
+      font-size: 0.8rem;
+      color: #a37c86;
+      text-align: center;
+      padding: 20px 0;
+    }
   </style>
 </head>
 <body>
 
-  <h1>🍌 無限名言バナナスカウター v53.0 🍌</h1>
-
-  <div class="scouter-view">
-    <video id="video" autoplay playsinline></video>
-    <div class="hud-grid"></div>
-    <div id="hud-banner" class="hud-banner">📡 スカウター起動待機中…</div>
-    <canvas id="scouter-overlay"></canvas>
+  <div class="header-area">
+    <div>
+      <h1>🍌 きゃわわバナナ鑑定所 🍌</h1>
+      <div id="face-icon" class="banana-face">🍌</div>
+    </div>
+    <button class="history-btn" onclick="openHistory()">📜 履歴</button>
+    <button class="history-btn ranking-btn" onclick="openRanking()">🏆 ランキング</button>
   </div>
 
-  <canvas id="crop-canvas" width="40" height="40" style="display:none;"></canvas>
+  <div class="mode-bar">
+    <button id="mode-normal-btn" class="mode-btn active" onclick="setMode('normal')">🔍 1本しっかり鑑定</button>
+    <button id="mode-scouter-btn" class="mode-btn" onclick="setMode('scouter')">📡 スカウターモード</button>
+  </div>
 
-  <button id="start-btn" class="btn-start" onclick="initScouter()">💥 無限名言スカウター起動！！</button>
+  <div class="camera-wrapper">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="snapshot" style="display: none;"></canvas>
+    <div id="guide" class="guide-frame"></div>
+    <div id="gacha-overlay" class="gacha-overlay">
+      <div id="gacha-spin" class="gacha-spin">🍌</div>
+      <div id="gacha-label" class="gacha-label">AI思考中…💭</div>
+    </div>
+    <canvas id="scouter-canvas" class="scouter-canvas"></canvas>
+    <div id="scouter-banner" class="scouter-banner">📡 スキャナー起動中…</div>
+  </div>
+
+  <div id="flying-pack" class="bouncing-pack">
+    <span id="flying-emoji" class="bouncing-banana">🍌</span>
+    <span id="flying-score" class="bouncing-score-text">0.0度</span>
+  </div>
+
+  <canvas id="calc-canvas" width="100" height="100" style="display:none;"></canvas>
+
+  <div class="card">
+    <div class="score-row">
+      <span class="score-label">✨ すてーたす</span>
+      <span id="static-score" class="settled-score">--</span>
+    </div>
+    <div id="title-badge" class="title-badge">称号</div>
+    <div id="badge" class="badge">AIじゅんびちゅう…🎀</div>
+    <div id="desc" class="desc">枠のなかにバナナちゃんをドン！とおさえてボタンをおしてね♡</div>
+    <div id="taunt-bubble" class="taunt-bubble"></div>
+    <div id="eta-box" class="eta-box"></div>
+    <div id="recipe-box" class="recipe-box"></div>
+
+    <div id="breakdown-toggle" class="breakdown-toggle" onclick="toggleBreakdown()">🔬 判定の根拠をみる（タップ）</div>
+    <div id="breakdown-panel" class="breakdown-panel"></div>
+
+    <!-- 🧠 常時表示されるAI思考ログ -->
+    <div id="ai-thought-box" class="ai-thought-box"></div>
+  </div>
+
+  <div class="btn-group">
+    <button id="main-btn" class="action-btn btn-scan" onclick="handleAction()">📸 カメラをつける！</button>
+    <button id="retake-btn" class="action-btn btn-retake" onclick="retake()">🔄 もう一回みる♡</button>
+  </div>
+
+  <div id="history-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>📜 かんてい履歴</span>
+        <button class="modal-close" onclick="closeHistory()">とじる</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <div id="ranking-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>🏆 バナナランキング</span>
+        <button class="modal-close" onclick="closeRanking()">とじる</button>
+      </div>
+      <div id="ranking-metric" class="ranking-metric">本日の指標：読み込み中…</div>
+      <div class="nickname-row">
+        <input id="nickname-input" type="text" placeholder="なまえ" maxlength="16">
+        <button onclick="saveNicknameFromInput()">保存</button>
+      </div>
+      <div id="ranking-list"></div>
+    </div>
+  </div>
 
   <script>
-    // 🕵️ 無限掛け合わせスロット辞書（Base64暗号化）
-    const _SLOTS = {
-      // 完熟用パーツ（A x B x C で数万通り）
-      R_A: ["56eB44Gu5oim6ZeY5Yqb44GvNTMwMDAw44CC", "6KaL44KN77yB", "5oiR44GM55Sf5rav44Gr44CB", "44GK5YmN44Gv44KC44GG44CB", "5pyA6auY44Gr44CO44OP44Kk77yB44CP44Gj44Gm44CB", "56yR44GI44Gw44GE44GE44Go5oCd44GG44CB", "5aSp5omN44Gg44GL44KJ44CB", "5bem5omL44Gv5re744GI44KL44Gg44GR44CB", "44Kq44Os44Gv5LuK44Gq44KT44Gg44CB", "5pyI44Gr5Luj44KP44Gj44Gm44CB", "5Yud5Yip44Gu5rOV5YmH44Gv44CB", "44GT44GT44GL44KJ44Gv44CB", "55SY44GV44GM44CB", "44GK44Gw44GC44Gh44KD44KT44GM6KiA44Gj44Gm44GE44Gf44CB"],
-      R_B: ["44K344Ol44Ks44O844K544Od44OD44OI44GM54af44GN6YCa44KK44CB", "5a6M54af44Gu5qW144Gr6YGU44GX44CB", "56We44Gu6aGY5Z+f44Gr6YGU44GX44CB", "55SY44GV44GM44GC44G144KM5Ye644Gm44CB", "6aOf44G56aCD44OU44O844Kv44Gr6YGU44GX44CB", "5by36ICF44Gu6aaZ5rCX44KS5pS+44Gh44CB", "6auY5qCh55Sf44GM44Gq44KB44KL55SY44GV44Gn44CB", "54af44GN5pyb44Gu44Km44Os44Km44Os44Gn44CB"],
-      R_C: ["5LiA54mH44Gu5oKUI44Gq44GX77yB", "55qu44KS44KA44GP44KT44Gg77yB", "55SY44KE44GL44GX44Gm44KI77yB", "5YWo6aOf44GX44Gm44KE44KL44Gc77yB", "5aSp44Gu6YGT44KS5b6A44GP77yB", "5pyJ5ZCN5Y6f44Go44Gq44KL77yB", "44K044Of44Gu44KI44GG44Gg77yB", "5LuK44GZ44GQ6aOf44GI77yB"],
-
-      // 未熟用パーツ
-      U_A: ["5oim6ZeY5Yqb44CA44Gf44Gj44Gf44GuNeOBi+KApuOCtOODn+OCgQ==", "44GK5YmN44Gu44KI44GG44Gq6Z2S44OQ44OK44OK44Gv44CB", "6YCA44Gs44GZX77yB5aqa44Gz44GZX77yB", "54Sh6aeE54Sh6aeE54Sh6aeE44OD77yB", "44OR44K/44O844Oz6Z2S44CB", "44GC44KT44Gf44OQ44Kr44Kh77yf", "44GT44KT44Gq5ZGz44Gu5pmC44CB", "5a6J6KW/5YWI55Sf44CB", "44Oq44Custom44Km44Oz44OJ44KS5Yi244GZ44Kq44O844Gv44CB", "6LK05qeY44CB", "44OA44Oh44Gg44CB", "5bm+5ben44Gj44Gm5aW044Gu5LuV5qWt44Gn44CB"],
-      U_B: ["56Gs44GZ44GO44Gm77yh77yULuODleOCo+ODvOODq+ODieOCkueVs+WSjOOBl+OBjeOBmu44CB", "5riL44G/44GM5ZC444KP44KM44CB", "6Ieq5YiG6Ieq6Lqr44Gu6Iul44GV44KG44GI44Gr6L+344KK44CB", "6aOf44GI44KL44KP44GR44Gq44GE44GY44KD44Gq44GP44CB", "5LiJ5LqV44Gu44KI44GG44Gr5p6h44KM44CB", "5byx6ICF44Gu44G+44G+44Gn44CB", "5b6M5q6144G444GZ44KK44CB", "6Z2S5rGB44Gu5ZGz44GM44GX44Gm44CB"],
-      U_C: ["6L+954af57WC5LqG44Gn44GZ44CC", "44Kp44K344GK44GN44KI77yB", "44Gp44KT44Gq6aZT44KS44GZ44KM44Gw44GE44GE44GL57W244GL44KT44CC", "5qqq44G444Gf44GP44Gq44GE77yB", "5LiJ5pel5a+d44GL44Gb77yB", "6YCA44GP44Ge77yB", "57WC44KP44KT44KI44CC", "5p2+5Lul5LiK44Gu5riL44GV44Gg77yB"],
-
-      // 標準用パーツ（超大増量）
-      N_A: ["55uu5qiZ44KS44K744Oz44K/44O844Gr5YWl44KM44Gm44CB", "6Kaa5oKf44Gv44GE44GE44GL77yf", "44Kq44Os44Gr5LuK44Gn44GN44KL44GT44Go44Gv44CB", "5pat44GT44Gf44KL5rG65Y2Y44Gn44CB", "5rWB44KM44Gv6Ieq5YiG44Gf44Gh44Gn5oyB44Gj44Gm44GP44KL44CA", "6JC944Gh44Gk44GR44CB", "44GT44GT44Gn44GK5YmN44GM6aOf44KP44Gq44GN44KD44CB", "5pmu6YCa44Gu44OQ44OK44OK44Gg44GM44CB", "5LqL5Lu244Gv44CB", "5b6A44GN44Gv44CB", "55qu44KS44KA44GE44Gf44KJ44CB", "5rG644G+44Gj44Gf44CB"],
-      N_B: ["5rex5ZG85ZC444GX44Gm44CB", "44K544Kk44OD44OB44KS5oq844GX44CB", "5biM5pyb44KS5o2o44Gm44Ga44CB", "44OQ44OK44OK44K544K/44Oz44OJ44GL44KJ44CB", "5pmu6YCa44Gr6aOf44G544KL44Gf44KB44Gr44CB", "5q2j6KaP44Gu6aOf44G56aCD44Gn44CB", "44Op44Kk44OV44K544K/44Kk44Or44KS5Y+X44GR5YWl44KM44CB", "6Kmw44GM6aOf44GP44KT44Gg44CB", "44OT44Op44OB44OG44Kj44Gu576p5b6h44Gr44CB"],
-      N_C: ["55qu44KS44KA44GP44CC", "44Gd44KM44GM44GE44GE44CC", "6aOf44G544KL44Go5oCd44GI44CC", "44Kq44Os44Gv44Gn44GN44Gm44KL77yB", "5LiA5Y+j6aOf44G544Gm44G/44KN44Gf44G+44GI44CC", "5q2j6KaP44Gu5ZGz44Gg77yB", "5qih56+E55qE44Gq5ZGz44Gg44CC", "44GL44GI44Gk44GK44Gt44GN44KM44Gf77yB"]
-    };
-
-    function decodeArr(arr) {
-      return arr.map(str => decodeURIComponent(escape(atob(str))));
-    }
-
-    const POOL = {
-      R_A: decodeArr(_SLOTS.R_A), R_B: decodeArr(_SLOTS.R_B), R_C: decodeArr(_SLOTS.R_C),
-      U_A: decodeArr(_SLOTS.U_A), U_B: decodeArr(_SLOTS.U_B), U_C: decodeArr(_SLOTS.U_C),
-      N_A: decodeArr(_SLOTS.N_A), N_B: decodeArr(_SLOTS.N_B), N_C: decodeArr(_SLOTS.N_C)
-    };
-
-    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
-
-    // 無限スロット生成エンジン
-    function generateInfiniteLine(type) {
-      if (type === 'ripe') return pick(POOL.R_A) + pick(POOL.R_B) + pick(POOL.R_C);
-      if (type === 'unripe') return pick(POOL.U_A) + pick(POOL.U_B) + pick(POOL.U_C);
-      return pick(POOL.N_A) + pick(POOL.N_B) + pick(POOL.N_C);
-    }
-
-    let model = null;
-    let video = document.getElementById('video');
-    let overlay = document.getElementById('scouter-overlay');
-    let ctx = overlay.getContext('2d');
-    let banner = document.getElementById('hud-banner');
-    let cropCanvas = document.getElementById('crop-canvas');
-    let cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
-    let isRunning = false;
+    let stream = null;
+    let net = null;
+    let cocoModel = null;
+    let cocoLoading = false;
+    let bounceAnimId = null;
+    let bounceTimer = null;
     let audioCtx = null;
-    let lastSpokenTime = 0;
+    let gachaInterval = null;
+    let currentMode = 'normal';
+    let scouterTimerId = null;
+    let scouterCtx = null;
+    let scouterSkin = 'dbz';
+    let scouterTickCount = 0;
+
+    let posX = 50, posY = 50;
+    let velX = 6, velY = 7;
+    let scale = 1.0;
+    let scaleGrowing = true;
+
+    const video = document.getElementById('video');
+    const snapCanvas = document.getElementById('snapshot');
+    const calcCanvas = document.getElementById('calc-canvas');
+    const calcCtx = calcCanvas.getContext('2d', { willReadFrequently: true });
+    const guide = document.getElementById('guide');
+    const badge = document.getElementById('badge');
+    const desc = document.getElementById('desc');
+    const tauntBubble = document.getElementById('taunt-bubble');
+    const etaBox = document.getElementById('eta-box');
+    const recipeBox = document.getElementById('recipe-box');
+    const aiThoughtBox = document.getElementById('ai-thought-box');
+    const mainBtn = document.getElementById('main-btn');
+    const retakeBtn = document.getElementById('retake-btn');
+    const flyingPack = document.getElementById('flying-pack');
+    const flyingScore = document.getElementById('flying-score');
+    const staticScore = document.getElementById('static-score');
+    const faceIcon = document.getElementById('face-icon');
+    const titleBadge = document.getElementById('title-badge');
+    const gachaOverlay = document.getElementById('gacha-overlay');
+    const gachaSpin = document.getElementById('gacha-spin');
+    const gachaLabel = document.getElementById('gacha-label');
+    const breakdownToggle = document.getElementById('breakdown-toggle');
+    const breakdownPanel = document.getElementById('breakdown-panel');
+    const modeNormalBtn = document.getElementById('mode-normal-btn');
+    const modeScouterBtn = document.getElementById('mode-scouter-btn');
+    const scouterCanvas = document.getElementById('scouter-canvas');
+    const scouterBanner = document.getElementById('scouter-banner');
+    const card = document.querySelector('.card');
+    const btnGroup = document.querySelector('.btn-group');
 
     function playBeep(freq, type, duration) {
       try {
@@ -167,7 +652,7 @@
         const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -176,40 +661,153 @@
       } catch(e) {}
     }
 
-    function speakScouter(text) {
-      if (!('speechSynthesis' in window)) return;
-      const now = Date.now();
-      if (now - lastSpokenTime < 4200) return;
-      lastSpokenTime = now;
+    function playBling() {
+      playBeep(523, 'sine', 0.1);
+      setTimeout(() => playBeep(659, 'sine', 0.1), 100);
+      setTimeout(() => playBeep(784, 'sine', 0.2), 200);
+    }
 
+    function playDrumroll() {
+      let f = 200;
+      const id = setInterval(() => { playBeep(f, 'square', 0.05); f += 15; }, 90);
+      setTimeout(() => { clearInterval(id); playBeep(1046, 'square', 0.25); }, 1300);
+    }
+
+    const DICTIONARY = {
+      human: [
+        { badge: '🍖 それ人間の手やろがいっ！', desc: '手や指をみせないで〜！AIちゃんも「それ人間の一部です」ってドン引きしてるよ？', recipe: '💡【救済策】今すぐ高級ハンドクリームを塗りたくって安静にしてください。', face: '😡', title: '称号：手のひらの求道者', taunt: '「…お前、バナナじゃないだろ。」' },
+        { badge: '🖐️ 人肉スキャンはだめ〜！', desc: 'バナナの皮かぶってから出直してきてね♡毛穴しかみえないよ！', recipe: '💡【救済策】手を黄色く塗っても糖度は上がりません。諦めましょう。', face: '💢', title: '称号：偽装未遂の記憶', taunt: '「変装、下手すぎ。」' }
+      ],
+      banana_unripe: [
+        { badge: '🤮 渋っっ！ガッチガチの草！', desc: '青汁よりしぶ〜い！噛んだ瞬間きゅってなるやつ！ゴリラも窓からポイするレベルだよ！', recipe: '💡【救済策】薄切りにしてフライパンで揚げ焼きにして塩を振れ！ポテチの味になるぞ！', face: '🥶', title: '称号：渋みの覇者', taunt: '「まだ早いって、言ったじゃん。」' },
+        { badge: '🪵 木片かじってるのぉ？', desc: 'えぐみの暴力〜！お口の水分ぜんぶ持っていかれちゃうよ！3日寝かせてね♡', recipe: '💡【救済策】ラップに包んでレンジで30秒チンして追熟を強引に偽装せよ！', face: '😱', title: '称号：修行中の若武者', taunt: '「あと数日、待つ気ある？」' }
+      ],
+      banana_ripe: [
+        { badge: '🍯 蜜のきわみ！自壊寸前っ！', desc: '糖度バクハツ〜！あまあまパラダイス！今すぐおなかにシュートしてぇ！！', recipe: '💡【救済策】牛乳と一緒にミキサーにぶち込んで一気飲みだ！噛む必要すらない！', face: '🤤', title: '称号：蜜の女神', taunt: '「あたし、今がピークなの。」' },
+        { badge: '🔥 かんじゅく神降臨〜✨', desc: 'シュガースポット全開だよ！飲む液体スイーツ！今日ちゅうに食べてね♡', recipe: '💡【救済策】ラップして冷凍庫へ突っ込め！天然の濃厚バナナアイス完成！', face: '😍', title: '称号：完熟の神', taunt: '「今日中に、食べて。約束ね。」' }
+      ],
+      banana_normal: [
+        { badge: '🍌 ふつうのバナナちゃん。', desc: 'THE・ひょうじゅん！スーパーのチラシにのってる通りの無難なお味だよ〜。', recipe: '💡【救済策】普通に皮をむいて、普通に食べてください。それが一番です。', face: '🙂', title: '称号：中庸の民', taunt: '「可もなく不可もなく、それが強み。」' }
+      ]
+    };
+
+    const BAROMETER_NAMES = [
+      '✨ 甘熟力', '💪 ウレてるウレてる指数', '💛 熟れ時パワー', '😳 うれしょん係数',
+      '🔥 甘熟王レベル', '💘 モテ期シンクロ率', '🍯 皮むきたい欲求指数',
+      '🎯 食べ頃コンプリート率', '👑 完熟覇権ポイント', '🌈 バナナ幸福偏差値'
+    ];
+    const scoreLabelEl = document.querySelector('.score-label');
+
+    function pickRandom(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    const NICK_POOL = ['バナナ探偵', '皮むき番長', 'ウレ活マイスター', '追熟の賢者', '甘党パトロール', '黄色いだけの人'];
+    let cachedNickname = null;
+
+    function loadNickname() {
+      if (cachedNickname) return cachedNickname;
+      cachedNickname = localStorage.getItem('banana_nickname');
+      if (!cachedNickname) {
+        cachedNickname = pickRandom(NICK_POOL) + Math.floor(Math.random() * 900 + 100);
+        localStorage.setItem('banana_nickname', cachedNickname);
+      }
+      return cachedNickname;
+    }
+
+    function saveNicknameFromInput() {
+      const input = document.getElementById('nickname-input');
+      const val = input.value.trim();
+      if (!val) return;
+      cachedNickname = val;
+      localStorage.setItem('banana_nickname', val);
+      openRanking();
+    }
+
+    function submitToLeaderboard(score, badge) {
+      try {
+        const nickname = loadNickname();
+        let list = JSON.parse(localStorage.getItem('banana_leaderboard') || '[]');
+        list.push({
+          score: parseFloat(score),
+          badge,
+          nickname,
+          date: new Date().toLocaleDateString('ja-JP')
+        });
+        list.sort((a, b) => b.score - a.score);
+        list = list.slice(0, 50);
+        localStorage.setItem('banana_leaderboard', JSON.stringify(list));
+      } catch (e) {}
+    }
+
+    function openRanking() {
+      const modal = document.getElementById('ranking-modal');
+      const metricEl = document.getElementById('ranking-metric');
+      const listEl = document.getElementById('ranking-list');
+      const nickInput = document.getElementById('nickname-input');
+      modal.style.display = 'flex';
+      metricEl.innerText = '本日の指標：' + pickRandom(BAROMETER_NAMES);
+      nickInput.value = loadNickname();
+      
+      const list = JSON.parse(localStorage.getItem('banana_leaderboard') || '[]');
+      if (list.length === 0) {
+        listEl.innerHTML = '<div class="history-empty">まだ誰もランクインしてないよ〜！🍌</div>';
+        return;
+      }
+      const medals = ['🥇', '🥈', '🥉'];
+      listEl.innerHTML = list.slice(0, 20).map((item, i) => `
+        <div class="rank-row">
+          <span class="rank-num">${medals[i] || (i + 1)}</span>
+          <span class="rank-name">${item.nickname}<br><span style="font-weight:400;font-size:0.7rem;color:#a37c86;">${item.badge}・${item.date}</span></span>
+          <span class="rank-score">${item.score.toFixed(1)}</span>
+        </div>
+      `).join('');
+    }
+
+    function closeRanking() {
+      document.getElementById('ranking-modal').style.display = 'none';
+    }
+
+    function speakCute(spokenScore, text) {
+      if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[（）()！!]/g, '、');
-      const uttr = new SpeechSynthesisUtterance(cleanText);
+      const cleanText = text.replace(/[！〜♡✨]/g, '、');
+      const utterText = `${spokenScore}。 ${cleanText}`;
+      const uttr = new SpeechSynthesisUtterance(utterText);
       uttr.lang = 'ja-JP';
       uttr.rate = 1.25;
-      uttr.pitch = 1.05;
+      uttr.pitch = 1.6;
+      const voices = window.speechSynthesis.getVoices();
+      const cuteVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Siri') || v.name.includes('Nanami')) && v.lang.includes('ja'));
+      if (cuteVoice) uttr.voice = cuteVoice;
       window.speechSynthesis.speak(uttr);
     }
 
-    async function initScouter() {
-      const btn = document.getElementById('start-btn');
-      btn.style.display = 'none';
-      banner.innerText = '🧠 無限構文解析エンジン起動中…';
-
+    async function loadAI() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false
-        });
-        video.srcObject = stream;
-        await video.play();
+        net = await mobilenet.load();
+        badge.innerText = 'AIじゅんび完了！カメラつけてね✨';
+      } catch (e) {
+        badge.innerText = 'AIロード失敗（通常モードで動くよ）';
+      }
+    }
+    loadAI();
 
-        model = await cocoSsd.load();
-        banner.innerText = '🟢 TARGET SEARCHING... バナナにかざせ！';
-        isRunning = true;
-        requestAnimationFrame(renderLoop);
-      } catch (err) {
-        banner.innerText = '❌ エラー: ' + err.message;
+    async function handleAction() {
+      if (!stream) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+          });
+          video.srcObject = stream;
+          mainBtn.innerText = '🔍 きゃわわスキャン開始！';
+          playBeep(440, 'sine', 0.1);
+        } catch (e) {
+          alert('カメラ許可エラーだよ: ' + e.message);
+        }
+      } else {
+        runGachaThenAnalyze();
       }
     }
 
@@ -219,8 +817,9 @@
       let h, s, v = max;
       const d = max - min;
       s = max === 0 ? 0 : d / max;
-      if (max === min) h = 0;
-      else {
+      if (max === min) {
+        h = 0;
+      } else {
         switch (max) {
           case r: h = (g - b) / d + (g < b ? 6 : 0); break;
           case g: h = (b - r) / d + 2; break;
@@ -231,92 +830,547 @@
       return [h * 360, s * 100, v * 100];
     }
 
-    async function renderLoop() {
-      if (!isRunning) return;
+    function runGachaThenAnalyze() {
+      snapCanvas.width = video.videoWidth;
+      snapCanvas.height = video.videoHeight;
+      snapCanvas.getContext('2d').drawImage(video, 0, 0);
 
-      overlay.width = video.videoWidth;
-      overlay.height = video.videoHeight;
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      mainBtn.style.display = 'none';
+      gachaOverlay.style.display = 'flex';
+      playDrumroll();
 
-      if (model && video.readyState >= 2) {
-        const predictions = await model.detect(video);
-        const bananas = predictions.filter(p => p.class === 'banana' && p.score > 0.35);
+      const spinEmojis = ['🍌','🍯','🥶','🍖','✨','🍌'];
+      const thoughts = [
+        '🧠 AIがニューラルネットワーク起動中…',
+        '🔬 ピクセル単位で糖度を推計中…',
+        '🍌 バナナの皮のシュガースポット探索中…',
+        '🔥 最終判定を算出中…！'
+      ];
+      let idx = 0;
+      gachaInterval = setInterval(() => {
+        gachaSpin.innerText = spinEmojis[idx % spinEmojis.length];
+        gachaLabel.innerText = thoughts[idx % thoughts.length];
+        gachaSpin.style.transform = `rotate(${idx * 37}deg)`;
+        idx++;
+      }, 100);
 
-        if (bananas.length > 0) {
-          playBeep(920 + Math.random() * 300, 'square', 0.025);
-
-          let maxPower = 0;
-          let bestLine = '';
-
-          bananas.forEach(b => {
-            const [x, y, w, h] = b.bbox;
-            cropCtx.drawImage(video, x, y, w, h, 0, 0, 40, 40);
-            const imgData = cropCtx.getImageData(0, 0, 40, 40).data;
-
-            let green = 0, spot = 0, yellow = 0, total = 0;
-            for (let i = 0; i < imgData.length; i += 4) {
-              const [hv, s, v] = rgbToHsv(imgData[i], imgData[i+1], imgData[i+2]);
-              total++;
-              if (hv >= 45 && hv <= 155 && s > 18) green++;
-              else if (hv >= 10 && hv < 32 && s > 40 && v < 35) spot++;
-              else yellow++;
-            }
-
-            const gRatio = green / total;
-            const sRatio = spot / total;
-
-            let power = 15000;
-            let status = '普通';
-            let line = generateInfiniteLine('normal');
-
-            if (gRatio > 0.25) {
-              power = Math.floor(5 + Math.random() * 45);
-              status = '使徒・ゴミめ（未熟）';
-              line = generateInfiniteLine('unripe');
-            } else if (sRatio > 0.15) {
-              power = 530000;
-              status = '覇権・完熟神！';
-              line = generateInfiniteLine('ripe');
-            }
-
-            if (power > maxPower) {
-              maxPower = power;
-              bestLine = line;
-            }
-
-            drawScouterTarget(b.bbox, power, status, power === 530000);
-          });
-
-          banner.innerHTML = `📡 捕捉: ${bananas.length}本 | 最高POWER: ${maxPower.toLocaleString()}<br><b>💬「${bestLine}」</b>`;
-          speakScouter(bestLine);
-        } else {
-          banner.innerText = '📡 SEARCHING... スーパーのバナナ売り場に向けろ！';
-        }
-      }
-
-      requestAnimationFrame(renderLoop);
+      setTimeout(() => {
+        clearInterval(gachaInterval);
+        gachaOverlay.style.display = 'none';
+        runAnalysis();
+      }, 1500);
     }
 
-    function drawScouterTarget(bbox, power, status, isMax) {
+    async function runAnalysis() {
+      video.style.display = 'none';
+      snapCanvas.style.display = 'block';
+      guide.style.display = 'none';
+      retakeBtn.style.display = 'block';
+
+      badge.innerText = '🧠 AIちゃんが判定完了✨';
+
+      let isBanana = false;
+      let aiLog = '🤖 AI推論: 物体認識モデル待機中';
+      if (net) {
+        try {
+          const predictions = await net.classify(snapCanvas);
+          if (predictions && predictions.length > 0) {
+            const top = predictions[0];
+            aiLog = `🤖 AIの推論: 「${top.className}」 (${(top.probability * 100).toFixed(1)}% の確信度)`;
+            isBanana = predictions.some(p => p.className.toLowerCase().includes('banana'));
+          }
+        } catch (err) {}
+      }
+
+      const sx = video.videoWidth * 0.15;
+      const sy = video.videoHeight * 0.15;
+      const sw = video.videoWidth * 0.7;
+      const sh = video.videoHeight * 0.7;
+      calcCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 100, 100);
+      const data = calcCtx.getImageData(0, 0, 100, 100).data;
+
+      analyzeBanana(data, isBanana, aiLog);
+    }
+
+    function spawnConfetti() {
+      const pieces = ['🎉','✨','🍌','💛','🌟'];
+      for (let i = 0; i < 26; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.innerText = pieces[Math.floor(Math.random() * pieces.length)];
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+        el.style.opacity = 0.9;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      }
+    }
+
+    function startBouncingPack(displayScore, spokenScore, speechText) {
+      flyingScore.innerText = displayScore;
+      flyingPack.style.display = 'block';
+      staticScore.innerText = '--';
+
+      posX = window.innerWidth / 3;
+      posY = window.innerHeight / 3;
+      velX = (Math.random() > 0.5 ? 1 : -1) * (6 + Math.random() * 3);
+      velY = (Math.random() > 0.5 ? 1 : -1) * (6 + Math.random() * 3);
+
+      function step() {
+        posX += velX;
+        posY += velY;
+
+        if (scaleGrowing) {
+          scale += 0.025;
+          if (scale > 1.6) scaleGrowing = false;
+        } else {
+          scale -= 0.025;
+          if (scale < 0.85) scaleGrowing = true;
+        }
+
+        const packRect = flyingPack.getBoundingClientRect();
+        if (posX <= 0 || posX + packRect.width >= window.innerWidth) {
+          velX = -velX;
+          posX = Math.max(0, Math.min(posX, window.innerWidth - packRect.width));
+        }
+        if (posY <= 0 || posY + packRect.height >= window.innerHeight) {
+          velY = -velY;
+          posY = Math.max(0, Math.min(posY, window.innerHeight - packRect.height));
+        }
+
+        flyingPack.style.left = posX + 'px';
+        flyingPack.style.top = posY + 'px';
+        flyingPack.style.transform = `scale(${scale}) rotate(${(posX % 50) - 25}deg)`;
+
+        bounceAnimId = requestAnimationFrame(step);
+      }
+
+      if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
+      bounceAnimId = requestAnimationFrame(step);
+
+      if (bounceTimer) clearTimeout(bounceTimer);
+      bounceTimer = setTimeout(() => {
+        cancelAnimationFrame(bounceAnimId);
+        flyingPack.style.display = 'none';
+        staticScore.innerText = displayScore;
+        staticScore.style.transform = 'scale(1.3)';
+        setTimeout(() => staticScore.style.transform = 'scale(1.0)', 300);
+
+        playBling();
+        speakCute(spokenScore, speechText);
+      }, 2400);
+    }
+
+    function renderBreakdown(pct, aiLog) {
+      breakdownPanel.innerHTML = `
+        <div class="breakdown-row"><span>🟢 緑み（未熟の目印）</span><div class="bar-bg"><div class="bar-fill" style="width:${pct.green}%;background:#66bb6a;"></div></div><span>${pct.green.toFixed(1)}%</span></div>
+        <div class="breakdown-row"><span>🟡 黄み（標準の色味）</span><div class="bar-bg"><div class="bar-fill" style="width:${pct.yellow}%;background:#ffca28;"></div></div><span>${pct.yellow.toFixed(1)}%</span></div>
+        <div class="breakdown-row"><span>🟤 斑点（シュガースポット）</span><div class="bar-bg"><div class="bar-fill" style="width:${pct.spot}%;background:#8d6e63;"></div></div><span>${pct.spot.toFixed(1)}%</span></div>
+        <div class="breakdown-row"><span>🖐️ 肌色（手の可能性）</span><div class="bar-bg"><div class="bar-fill" style="width:${pct.skin}%;background:#f48fb1;"></div></div><span>${pct.skin.toFixed(1)}%</span></div>
+        <div class="breakdown-formula">
+          <b>${aiLog}</b><br>
+          「糖度指数」＝ 基準14.0 − 緑み×10 ＋ 黄み×3 ＋ 斑点×8（0〜25にクリップ）<br>
+          ※ニューラルネットワーク物体認識と色相解析を統合して算出。
+        </div>
+      `;
+    }
+
+    function toggleBreakdown() {
+      breakdownPanel.style.display = breakdownPanel.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function estimateEta(category, greenPct, spotPct) {
+      if (category === 'banana_unripe') {
+        const days = Math.max(1, Math.round(greenPct / 12));
+        return `🕒 食べごろ予測：常温であと${days}日ほどで食べごろに近づくよ。冷蔵庫はNG！`;
+      }
+      if (category === 'banana_ripe') {
+        return `🕒 食べごろ予測：今がピーク！今日〜明日中に食べきるのがおすすめ。`;
+      }
+      if (category === 'banana_normal') {
+        return `🕒 食べごろ予測：あと1〜2日で甘みが増すよ。`;
+      }
+      return '';
+    }
+
+    function saveHistoryEntry(entry) {
+      try {
+        let list = JSON.parse(localStorage.getItem('banana_history') || '[]');
+        list.unshift(entry);
+        list = list.slice(0, 30);
+        localStorage.setItem('banana_history', JSON.stringify(list));
+      } catch (e) {}
+    }
+
+    function openHistory() {
+      const modal = document.getElementById('history-modal');
+      const listEl = document.getElementById('history-list');
+      modal.style.display = 'flex';
+      const list = JSON.parse(localStorage.getItem('banana_history') || '[]');
+      if (list.length === 0) {
+        listEl.innerHTML = '<div class="history-empty">まだ鑑定履歴がないよ〜📭</div>';
+        return;
+      }
+      listEl.innerHTML = list.map(item => `
+        <div class="history-item">
+          <span class="emoji">${item.face}</span>
+          <span class="meta">${item.date}<br>${item.badge}</span>
+          <span class="score">${item.score}</span>
+        </div>
+      `).join('');
+    }
+
+    function closeHistory() {
+      document.getElementById('history-modal').style.display = 'none';
+    }
+
+    function computeColorStats(data) {
+      let green = 0, yellow = 0, spot = 0, skin = 0, total = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const [h, s, v] = rgbToHsv(data[i], data[i+1], data[i+2]);
+        total++;
+        if (h >= 5 && h <= 30 && s >= 12 && s <= 45 && v >= 40) skin++;
+        else if (h >= 45 && h <= 155 && s > 18 && v > 15) green++;
+        else if (h >= 32 && h < 45 && s > 30 && v > 35) yellow++;
+        else if (h >= 10 && h < 32 && s > 45 && v >= 15 && v <= 35) spot++;
+      }
+      return {
+        green, yellow, spot, skin, total,
+        pct: {
+          green: (green / total) * 100,
+          yellow: (yellow / total) * 100,
+          spot: (spot / total) * 100,
+          skin: (skin / total) * 100
+        }
+      };
+    }
+
+    function computeScore(stats) {
+      const bananaPixels = stats.green + stats.yellow + stats.spot;
+      const gRatio = bananaPixels > 0 ? stats.green / bananaPixels : 0;
+      const sRatio = bananaPixels > 0 ? stats.spot / bananaPixels : 0;
+      const yRatio = bananaPixels > 0 ? stats.yellow / bananaPixels : 0;
+
+      let score = 14.0 - (gRatio * 10) + (yRatio * 3) + (sRatio * 8);
+      score = Math.max(0, Math.min(25, score));
+
+      let category;
+      if (gRatio > 0.10) category = 'banana_unripe';
+      else if (sRatio > 0.25) category = 'banana_ripe';
+      else category = 'banana_normal';
+
+      return { score, category, gRatio, sRatio, yRatio };
+    }
+
+    function analyzeBanana(data, isBananaByAI, aiLog) {
+      const stats = computeColorStats(data);
+      const pct = stats.pct;
+
+      mainBtn.style.display = 'block';
+      mainBtn.innerText = '📸 カメラをつける！';
+
+      if (!isBananaByAI && pct.skin > 30) {
+        const res = pickRandom(DICTIONARY.human);
+        showResult('human', res, '0.0度', 'とうど、れいてんれい ど', pct, aiLog);
+        return;
+      }
+
+      const { score, category } = computeScore(stats);
+      const rawNum = score.toFixed(1);
+      const res = pickRandom(DICTIONARY[category]);
+      showResult(category, res, `${rawNum}度`, `とうど、${rawNum} ど`, pct, aiLog);
+    }
+
+    function showResult(category, res, displayScore, spokenScore, pct, aiLog) {
+      scoreLabelEl.innerText = pickRandom(BAROMETER_NAMES);
+
+      badge.innerText = res.badge;
+      desc.innerText = res.desc;
+      recipeBox.innerText = res.recipe;
+      recipeBox.style.display = 'block';
+      faceIcon.innerText = res.face;
+
+      titleBadge.innerText = res.title;
+      titleBadge.style.display = 'block';
+
+      tauntBubble.innerText = '🍌バナナの声：' + res.taunt;
+      tauntBubble.style.display = 'block';
+
+      // 🧠 AI思考ログを常時表示
+      aiThoughtBox.innerText = aiLog;
+      aiThoughtBox.style.display = 'block';
+
+      const colorMap = {
+        human: ['#ffd1d1', '#d32f2f'],
+        banana_unripe: ['#d4edda', '#155724'],
+        banana_ripe: ['#ffeeba', '#856404'],
+        banana_normal: ['#fff3cd', '#856404']
+      };
+      badge.style.background = colorMap[category][0];
+      badge.style.color = colorMap[category][1];
+
+      const etaText = estimateEta(category, pct.green, pct.spot);
+      if (etaText) {
+        etaBox.innerText = etaText;
+        etaBox.style.display = 'block';
+      } else {
+        etaBox.style.display = 'none';
+      }
+
+      renderBreakdown(pct, aiLog);
+      breakdownToggle.style.display = 'block';
+      breakdownPanel.style.display = 'none';
+
+      startBouncingPack(displayScore, spokenScore, res.badge + '、' + res.desc);
+
+      if (category === 'banana_ripe') {
+        setTimeout(spawnConfetti, 2400);
+      }
+
+      saveHistoryEntry({
+        date: new Date().toLocaleString('ja-JP'),
+        score: displayScore,
+        badge: res.badge,
+        face: res.face
+      });
+
+      if (category !== 'human') {
+        submitToLeaderboard(displayScore.replace('度', ''), res.badge);
+      }
+    }
+
+    async function ensureCamera() {
+      if (stream) return true;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        video.srcObject = stream;
+        return true;
+      } catch (e) {
+        alert('カメラ許可エラーだよ: ' + e.message);
+        return false;
+      }
+    }
+
+    async function setMode(mode) {
+      if (mode === currentMode) return;
+      currentMode = mode;
+      modeNormalBtn.classList.toggle('active', mode === 'normal');
+      modeScouterBtn.classList.toggle('active', mode === 'scouter');
+
+      if (mode === 'scouter') {
+        await enterScouterMode();
+      } else {
+        exitScouterMode();
+      }
+    }
+
+    async function enterScouterMode() {
+      if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
+      if (bounceTimer) clearTimeout(bounceTimer);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      flyingPack.style.display = 'none';
+      gachaOverlay.style.display = 'none';
+
+      const ok = await ensureCamera();
+      if (!ok) { setMode('normal'); return; }
+
+      video.style.display = 'block';
+      snapCanvas.style.display = 'none';
+      guide.style.display = 'none';
+      card.style.display = 'none';
+      btnGroup.style.display = 'none';
+      scouterCanvas.style.display = 'block';
+      scouterBanner.style.display = 'block';
+      scouterBanner.innerText = '📡 COCO-SSDモデル読み込み中…';
+
+      if (!cocoModel && !cocoLoading) {
+        cocoLoading = true;
+        try {
+          cocoModel = await cocoSsd.load();
+        } catch (e) {
+          scouterBanner.innerText = '⚠️ 検出モデルの読み込みに失敗したよ';
+        }
+        cocoLoading = false;
+      }
+
+      if (scouterTimerId) clearInterval(scouterTimerId);
+      scouterSkin = 'dbz';
+      scouterTickCount = 0;
+      scouterTimerId = setInterval(scouterTick, 700);
+    }
+
+    function exitScouterMode() {
+      if (scouterTimerId) clearInterval(scouterTimerId);
+      scouterTimerId = null;
+      scouterCanvas.style.display = 'none';
+      scouterBanner.style.display = 'none';
+      card.style.display = 'block';
+      btnGroup.style.display = 'flex';
+      guide.style.display = 'block';
+      if (stream) mainBtn.innerText = '🔍 きゃわわスキャン開始！';
+    }
+
+    async function scouterTick() {
+      if (currentMode !== 'scouter' || !cocoModel || video.readyState < 2) return;
+      if (video.videoWidth === 0) return;
+
+      scouterTickCount++;
+      if (scouterTickCount % 5 === 0) {
+        scouterSkin = Math.random() < 0.3 ? 'terminator' : 'dbz';
+      }
+
+      scouterCanvas.width = video.videoWidth;
+      scouterCanvas.height = video.videoHeight;
+      if (!scouterCtx) scouterCtx = scouterCanvas.getContext('2d');
+      scouterCtx.clearRect(0, 0, scouterCanvas.width, scouterCanvas.height);
+
+      let predictions = [];
+      try {
+        predictions = await cocoModel.detect(video);
+      } catch (e) { return; }
+
+      const bananas = predictions.filter(p => p.class === 'banana' && p.score > 0.4);
+
+      if (bananas.length === 0) {
+        scouterBanner.innerText = '📡 レンズをバナナに向けてね〜（探索中）';
+        return;
+      }
+
+      const results = bananas.map(b => {
+        const [bx, by, bw, bh] = b.bbox;
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = 40; cropCanvas.height = 40;
+        const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+        cropCtx.drawImage(video, bx, by, bw, bh, 0, 0, 40, 40);
+        const imgData = cropCtx.getImageData(0, 0, 40, 40).data;
+        const stats = computeColorStats(imgData);
+        const { score, category } = computeScore(stats);
+        return { bbox: b.bbox, score, category };
+      });
+
+      let topIdx = 0;
+      results.forEach((r, i) => { if (r.score > results[topIdx].score) topIdx = i; });
+
+      results.forEach((r, i) => {
+        drawScouterBox(r.bbox, r.score, i === topIdx);
+      });
+
+      const top = results[topIdx];
+      const categoryLabel = { banana_unripe: 'まだ青い', banana_ripe: '完熟！', banana_normal: 'ふつう' }[top.category] || '';
+      if (scouterSkin === 'terminator') {
+        scouterBanner.innerText = `🔴 TARGET ACQUIRED — ${bananas.length} SUBJECT(S) — BEST: ${top.score.toFixed(1)}`;
+      } else {
+        const barometerShort = pickRandom(BAROMETER_NAMES).replace(/^[^\s]+\s/, '');
+        scouterBanner.innerText = `📡 ${bananas.length}本検出！一番の${barometerShort}は ${top.score.toFixed(1)}（${categoryLabel}）`;
+      }
+    }
+
+    function drawScouterBox(bbox, score, isTop) {
+      if (scouterSkin === 'terminator') {
+        drawTerminatorBox(bbox, score, isTop);
+      } else {
+        drawDbzBox(bbox, score, isTop);
+      }
+    }
+
+    function drawDbzBox(bbox, score, isTop) {
       const [x, y, w, h] = bbox;
-      const color = isMax ? '#FF0055' : (power < 100 ? '#00FF66' : '#FFD700');
+      const color = isTop ? '#FFD700' : (score > 18 ? '#7CFC00' : score > 10 ? '#FFEB3B' : '#FF6B6B');
+      const ctx = scouterCtx;
+      const cornerLen = Math.min(w, h) * 0.18;
 
       ctx.strokeStyle = color;
-      ctx.lineWidth = isMax ? 4 : 2;
+      ctx.lineWidth = isTop ? 4 : 2.5;
       ctx.shadowColor = color;
-      ctx.shadowBlur = isMax ? 18 : 6;
+      ctx.shadowBlur = isTop ? 12 : 4;
 
-      const len = Math.min(w, h) * 0.2;
+      const corners = [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]];
+      corners.forEach(([cx, cy, dx, dy]) => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + cornerLen * dy);
+        ctx.lineTo(cx);
+        ctx.lineTo(cx + cornerLen * dx, cy);
+        ctx.stroke();
+      });
+
+      ctx.shadowBlur = 0;
+      ctx.font = `bold ${Math.max(14, w * 0.09)}px monospace`;
+      ctx.fillStyle = color;
+      ctx.textBaseline = 'bottom';
+      const label = (isTop ? '🎯 ' : '') + '糖度 ' + score.toFixed(1);
+      ctx.fillText(label, x, y - 4 > 14 ? y - 4 : y + h + 18);
+
+      if (isTop) {
+        ctx.font = `bold ${Math.max(12, w * 0.08)}px sans-serif`;
+        ctx.fillText('コレやで!!', x, y + h + (y - 4 > 14 ? 0 : 34));
+      }
+    }
+
+    function drawTerminatorBox(bbox, score, isTop) {
+      const [x, y, w, h] = bbox;
+      const ctx = scouterCtx;
+      const cx = x + w / 2, cy = y + h / 2;
+      const r = Math.max(w, h) / 2 + 6;
+      const color = isTop ? '#ff1a1a' : '#ff5c5c';
+
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = isTop ? 10 : 3;
+
+      ctx.lineWidth = isTop ? 3 : 2;
+      ctx.setLineDash([8, 6]);
+      ctx.lineDashOffset = (Date.now() / 30) % 14;
       ctx.beginPath();
-      ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y);
-      ctx.moveTo(x + w - len, y); ctx.lineTo(x + w); ctx.lineTo(x + w, y + len);
-      ctx.moveTo(x, y + h - len); ctx.lineTo(x, y + h); ctx.lineTo(x + len, y + h);
-      ctx.moveTo(x + w - len, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - len);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - r - 10, cy); ctx.lineTo(cx - r + 6, cy);
+      ctx.moveTo(cx + r - 6, cy); ctx.lineTo(cx + r + 10, cy);
+      ctx.moveTo(cx, cy - r - 10); ctx.lineTo(cx, cy - r + 6);
+      ctx.moveTo(cx, cy + r - 6); ctx.lineTo(cx, cy + r + 10);
       ctx.stroke();
 
-      ctx.fillStyle = color;
-      ctx.font = 'bold 15px monospace';
-      ctx.fillText(`POWER: ${power.toLocaleString()}`, x, y - 8 > 16 ? y - 8 : y + h + 18);
+      ctx.shadowBlur = 0;
+      ctx.font = `bold ${Math.max(12, w * 0.08)}px monospace`;
+      ctx.textBaseline = 'bottom';
+      const label = (isTop ? 'LOCKED ON — ' : 'SCAN — ') + score.toFixed(1);
+      ctx.fillText(label, x, y - 6 > 14 ? y - 6 : y + h + r + 16);
+    }
+
+    function retake() {
+      if (bounceAnimId) cancelAnimationFrame(bounceAnimId);
+      if (bounceTimer) clearTimeout(bounceTimer);
+      if (gachaInterval) clearInterval(gachaInterval);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+      flyingPack.style.display = 'none';
+      gachaOverlay.style.display = 'none';
+      staticScore.innerText = '--';
+      video.style.display = 'block';
+      snapCanvas.style.display = 'none';
+      guide.style.display = 'block';
+      mainBtn.style.display = 'block';
+      retakeBtn.style.display = 'none';
+      titleBadge.style.display = 'none';
+      tauntBubble.style.display = 'none';
+      etaBox.style.display = 'none';
+      breakdownToggle.style.display = 'none';
+      breakdownPanel.style.display = 'none';
+      aiThoughtBox.style.display = 'none';
+      scoreLabelEl.innerText = '✨ すてーたす';
+      badge.innerText = 'バナナちゃんをうつしてね♡';
+      badge.style.background = '#ffe3ee';
+      badge.style.color = '#d81b60';
+      desc.innerText = '枠のなかにバナナちゃんをドン！とおさえてボタンをおしてね♡';
+      recipeBox.style.display = 'none';
+      faceIcon.innerText = '🍌';
     }
   </script>
 </body>
